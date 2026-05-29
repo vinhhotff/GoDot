@@ -65,6 +65,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if game_manager and not game_manager.is_prologue:
 			game_manager.toggle_rules_ui(self)
 
+	# Bật/tắt Bảng Thử Nghiệm Kinh Dị bằng phím 'H' hoặc 'F2'
+	if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_H or event.keycode == KEY_F2):
+		var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
+		if game_manager:
+			game_manager.toggle_horror_test_ui(self)
+
 	# Bật/tắt màn hình CCTV — CHỈ HOẠT ĐỘNG KHI Ở TRONG PHÒNG NGHỈ
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
 		var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
@@ -184,7 +190,8 @@ func set_holding_mop(holding: bool) -> void:
 			var cyl = CylinderMesh.new()
 			cyl.radial_segments = 8
 			cyl.rings = 1
-			cyl.radius = 0.02
+			cyl.top_radius = 0.02
+			cyl.bottom_radius = 0.02
 			cyl.height = 1.0
 			mop_mesh.mesh = cyl
 			
@@ -230,7 +237,8 @@ func set_pushing_cart(pushing: bool) -> void:
 			
 			var handle = MeshInstance3D.new()
 			var cyl = CylinderMesh.new()
-			cyl.radius = 0.015
+			cyl.top_radius = 0.015
+			cyl.bottom_radius = 0.015
 			cyl.height = 0.7
 			handle.mesh = cyl
 			var handle_mat = StandardMaterial3D.new()

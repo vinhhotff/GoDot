@@ -79,6 +79,28 @@ func _build_ui() -> void:
 	title_lbl.add_theme_font_size_override("font_size", 15)
 	title_bar.add_child(title_lbl)
 
+	# Nút đóng hệ thống ở góc trên phải của title_bar
+	var close_btn = Button.new()
+	close_btn.text = "   [X] ĐÓNG CAMERA (C/ESC)   "
+	close_btn.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	close_btn.offset_right = -10
+	close_btn.offset_top = 5
+	close_btn.offset_bottom = 33
+	# Custom style
+	close_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	close_btn.add_theme_color_override("font_hover_color", Color(1.0, 0.6, 0.6))
+	close_btn.add_theme_font_size_override("font_size", 11)
+	
+	# Kết nối sự kiện bấm nút
+	close_btn.pressed.connect(func():
+		var gm = get_tree().current_scene.get_node_or_null("GameManager")
+		if gm:
+			var player = get_tree().current_scene.find_child("Player", true, false)
+			if player:
+				gm.toggle_cctv_ui(player)
+	)
+	title_bar.add_child(close_btn)
+
 	# ── LƯỚI CAMERA ──
 	var grid = GridContainer.new()
 	grid.columns = 2
@@ -226,6 +248,16 @@ func _sync_clock() -> void:
 		var m  = str(gm.current_minute) if gm.current_minute >= 10 else "0" + str(gm.current_minute)
 		var ap = "AM" if gm.is_am else "PM"
 		clock_label.text = "SYS TIME: %s:%s %s  |  [C] DONG CUA HE THONG CAMERA" % [str(gm.current_hour), m, ap]
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_C or event.keycode == KEY_ESCAPE:
+			var gm = get_tree().current_scene.get_node_or_null("GameManager")
+			if gm:
+				var player = get_tree().current_scene.find_child("Player", true, false)
+				if player:
+					get_viewport().set_input_as_handled()
+					gm.toggle_cctv_ui(player)
 
 # ── PUBLIC API ──────────────────────────────────────────────────────────────
 

@@ -25,9 +25,9 @@ var current_hour: int = 12
 var current_minute: int = 0
 var is_am: bool = true
 
-# Bộ đếm giây - LÀM CHẬM THỜI GIAN ĐỂ TĂNG NỖI SỢ (2.2 giây thực tế = 1 phút ảo)
+# Bộ đếm giây - LÀM CHẬM THỜI GIAN ĐỂ TĂNG NỖI SỢ (1.68 giây thực tế = 1 phút ảo - Đã tua nhanh thêm 10%)
 var time_accumulator: float = 0.0
-const MINUTE_DURATION: float = 1.87 # 15% faster time (2.2 * 0.85) => 1.87 giây mỗi phút ảo
+const MINUTE_DURATION: float = 1.68 # Đã tua nhanh thêm 10% (1.87 * 0.9 = 1.68)
 
 # Tham chiếu tới UI Player và Môi trường
 var clock_label: Label = null
@@ -41,7 +41,12 @@ var dialogue_active: bool = false
 var dialog_queue: Array = []
 var active_dialog_callback: Callable = Callable()
 
-# --- TRẠNG THÁI HIỆN TƯỢNG KINH DỊ ---
+# --- TRẠNG THÁI HIỆN TƯỢNG KINH DỊ & TUẦN TRA ---
+var current_anomaly_resolved: bool = true
+var active_anomaly_type: String = ""
+var active_anomaly_aisle: int = 0
+var freezer_inspect_box_instance: StaticBody3D = null
+
 var last_patrol_hour: int = 12       # Theo dõi mốc giờ tuần tra (1 tiếng kiểm tra 1 lần)
 var aisle7_cry_triggered: bool = false
 var freezer_knock_timer: float = 0.0
@@ -59,6 +64,7 @@ var ghost_active: bool = false
 var ghost_instance: Node3D = null
 var ghost_look_timer: float = 0.0
 var ghost_spawn_timer: float = 0.0
+var aisle7_jumpscare_cooldown: float = 0.0  # Guard chống spam jumpscare mỗi frame
 
 # Sự kiện Đèn chập tắt ngẫu nhiên & Bật cầu dao cuối hành lang (Ngày 2 & 3)
 var blackout_timer: float = 0.0
@@ -80,6 +86,69 @@ var blood_spawn_timer: float = 0.0
 var has_spawned_blood: bool = false
 var blood_puddle_instance: StaticBody3D = null
 var breakroom_mop_instance: StaticBody3D = null
+var mop_return_zone_instance: StaticBody3D = null
+
+# ==================== HỆ THỐNG NPC DỊ NHÂN CẢN ĐƯỜNG & JUMPSCARE ====================
+# CONFIG: Dễ dàng thay model 3D sau này bằng cách sửa mảng CREEPY_NPC_DEFS
+var CREEPY_NPC_DEFS = [
+	{
+		"name": "ShadowMan",
+		"mesh_type": "capsule",  # Đổi thành "scene" khi có model: "scene_path": "res://models/shadow_man.tscn"
+		"color": Color(0.02, 0.02, 0.02),
+		"emission": Color(0.0, 0.0, 0.0),
+		"height": 1.85,
+		"radius": 0.3,
+		"scale": Vector3(1, 1, 1),
+		"scare_text": "Một bóng đen cao lớn bất động đứng chắn ngang lối đi... đầu hơi nghiêng về phía bạn...",
+	},
+	{
+		"name": "PaleFace",
+		"mesh_type": "capsule",
+		"color": Color(0.85, 0.8, 0.75),
+		"emission": Color(0.3, 0.15, 0.15),
+		"height": 1.7,
+		"radius": 0.35,
+		"scale": Vector3(1, 1, 1),
+		"scare_text": "Một khuôn mặt trắng bệch không có mắt đang quay chậm về phía bạn...",
+	},
+	{
+		"name": "TwitchingChild",
+		"mesh_type": "capsule",
+		"color": Color(0.1, 0.1, 0.15),
+		"emission": Color(0.05, 0.0, 0.1),
+		"height": 1.1,
+		"radius": 0.22,
+		"scale": Vector3(1, 1, 1),
+		"scare_text": "Một hình bóng nhỏ bé đang giật giật co quắp giữa hành lang tối... tiếng lách cách xương vang lên...",
+	},
+	{
+		"name": "TallCrawler",
+		"mesh_type": "capsule",
+		"color": Color(0.15, 0.05, 0.0),
+		"emission": Color(0.15, 0.02, 0.0),
+		"height": 2.2,
+		"radius": 0.2,
+		"scale": Vector3(0.7, 1.3, 0.7),
+		"scare_text": "Một thực thể dài ngoằng khẳng khiu đang bò trên trần nhà, cổ nó vặn ngược 180 độ nhìn thẳng xuống bạn...",
+	},
+]
+
+# Vị trí spawn NPC dị nhân ở giữa các hành lang (CONFIG: thêm/xóa vị trí tùy ý)
+var CREEPY_SPAWN_POINTS = [
+	Vector3(-9.6, 0.0, -4.0),   # Hành lang giữa Aisle 1-2
+	Vector3(-6.4, 0.0, -1.0),   # Hành lang giữa Aisle 2-3
+	Vector3(-3.2, 0.0, -5.0),   # Hành lang giữa Aisle 3-4
+	Vector3(0.0, 0.0, -3.0),    # Hành lang giữa Aisle 4-5
+	Vector3(3.2, 0.0, -6.0),    # Hành lang giữa Aisle 5-6
+	Vector3(6.4, 0.0, 0.0),     # Hành lang giữa Aisle 6-7
+	Vector3(9.6, 0.0, -4.0),    # Hành lang giữa Aisle 7-8
+]
+
+var creepy_npc_instance: Node3D = null
+var creepy_npc_timer: float = 0.0
+var creepy_npc_active: bool = false
+var creepy_npc_cooldown: float = 0.0  # Thời gian nghỉ giữa các lần NPC xuất hiện
+var creepy_npc_look_timer: float = 0.0  # Thời gian nhìn vào NPC trước khi jumpscare
 
 # Xem lại Nội quy mọi lúc
 var active_scroll_canvas: CanvasLayer = null
@@ -121,6 +190,24 @@ func _find_references() -> void:
 		current_hud = player_node.get_node_or_null("HUD")
 	main_light = get_tree().current_scene.get_node_or_null("DirectionalLight3D")
 	world_env = get_tree().current_scene.get_node_or_null("WorldEnvironment")
+	
+	if current_hud and not current_hud.has_node("TestTipLabel"):
+		var test_tip = Label.new()
+		test_tip.name = "TestTipLabel"
+		test_tip.horizontal_alignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_LEFT
+		test_tip.vertical_alignment = VerticalAlignment.VERTICAL_ALIGNMENT_TOP
+		test_tip.offset_left = 15
+		test_tip.offset_top = 15
+		
+		var settings = LabelSettings.new()
+		settings.font_size = 12
+		settings.font_color = Color(1.0, 0.3, 0.3)
+		settings.outline_size = 4
+		settings.outline_color = Color(0.0, 0.0, 0.0)
+		test_tip.label_settings = settings
+		test_tip.text = "🔴 [H / F2] MỞ BẢNG TEST KINH DỊ & CHỌN NGÀY"
+		
+		current_hud.add_child(test_tip)
 
 # --- KẾT NỐI VÀ KHÓA CHẶT LOOP NHẠC TRONG SUỐT QUÁ TRÌNH LÀM VIỆC ---
 func _setup_looping_music() -> void:
@@ -444,16 +531,11 @@ func _trigger_guest_event() -> void:
 	if guest_npc:
 		guest_npc.visible = true
 		
-		# Animation nhấp nhô (bobbing) giả lập bước đi nhịp nhàng
-		var guest_mesh = guest_npc.get_node_or_null("MeshInstance3D")
-		if guest_mesh:
-			var bob_tween = create_tween().set_loops(6)
-			bob_tween.tween_property(guest_mesh, "position:y", 0.08, 0.25)
-			bob_tween.tween_property(guest_mesh, "position:y", 0.0, 0.25)
+		# Move GuestNPC straight to target position on ground
+		var target_pos = Vector3(-3.0, 0.9, 9.0)
+		var move_tween = create_tween()
+		move_tween.tween_property(guest_npc, "global_position", target_pos, 3.0)
 			
-		var tween = create_tween()
-		tween.tween_property(guest_npc, "global_position", Vector3(-3.0, 0.9, 9.0), 3.0)
-		
 	start_dialogue_sequence([
 		" Một vị khách nam bước đi lững thững, đầu cúi gằm, chậm rãi đi lại quầy thanh toán số một...",
 		" Vị khách: 'Này cậu bảo vệ trẻ... Cậu định ngủ gật suốt ca làm đấy à?'",
@@ -463,14 +545,16 @@ func _trigger_guest_event() -> void:
 	], func():
 		var tween = create_tween()
 		if guest_npc:
-			# Animation lùi bước đi ra ngoài
-			var guest_mesh = guest_npc.get_node_or_null("MeshInstance3D")
-			if guest_mesh:
-				var bob_tween = create_tween().set_loops(6)
-				bob_tween.tween_property(guest_mesh, "position:y", 0.08, 0.25)
-				bob_tween.tween_property(guest_mesh, "position:y", 0.0, 0.25)
-			
-			tween.tween_property(guest_npc, "global_position", Vector3(0.0, 0.9, 13.5), 3.0)
+			# Move back straight to original position
+			var return_pos = Vector3(0.0, 0.9, 13.5)
+			tween.tween_property(guest_npc, "global_position", return_pos, 3.0)
+			# When near player, rotate to face them
+			tween.tween_callback(func():
+				var player = get_tree().current_scene.find_child("Player", true, false)
+				if player:
+					guest_npc.look_at(player.global_transform.origin, Vector3.UP)
+			)
+			# Hide after movement
 			tween.tween_callback(func(): guest_npc.visible = false)
 			
 		start_dialogue_sequence([
@@ -535,6 +619,17 @@ func start_official_shift() -> void:
 	if is_instance_valid(breakroom_mop_instance):
 		breakroom_mop_instance.queue_free()
 	breakroom_mop_instance = null
+	if is_instance_valid(mop_return_zone_instance):
+		mop_return_zone_instance.queue_free()
+	mop_return_zone_instance = null
+	if is_instance_valid(creepy_npc_instance):
+		creepy_npc_instance.queue_free()
+	creepy_npc_instance = null
+	creepy_npc_active = false
+	creepy_npc_timer = 0.0
+	creepy_npc_cooldown = 0.0
+	aisle7_jumpscare_cooldown = 0.0
+	ghost_spawn_timer = 0.0
 	
 	var player_node = get_tree().current_scene.find_child("Player", true, false)
 	if player_node:
@@ -561,10 +656,12 @@ func start_official_shift() -> void:
 	
 	var day_str = "ĐÊM 1" if current_day == 1 else ("ĐÊM 2" if current_day == 2 else "ĐÊM CUỐI CÙNG")
 	_clear_objective() # Xoá nhiệm vụ "đọc quy tắc" cũ ngay lập tức
+	current_anomaly_resolved = true
+	active_anomaly_type = ""
 	start_dialogue_sequence([
 		" Tiếng chuông đúng 12:00 AM báo hiệu. Ca trực bảo vệ đêm siêu thị West " + day_str + " chính thức bắt đầu!"
 	], func():
-		_set_objective("NHIỆM VỤ: Đi tuần tra toàn bộ siêu thị mỗi 1 TIẾNG ảo một lần (ví dụ: 1:00 AM, 2:00 AM...).")
+		_set_objective("NHIỆM VỤ: Làm quen với siêu thị. Sự kiện tuần tra dị thường đầu tiên sẽ bắt đầu lúc 1:00 AM.")
 		var p = get_tree().current_scene.find_child("Player", true, false)
 		if p:
 			p.set_physics_process(true)
@@ -580,6 +677,12 @@ func _process_shift(delta: float) -> void:
 		_advance_time()
 
 func _advance_time() -> void:
+	# Nếu phút ảo chạm 60 (tức là sắp sang giờ mới), kiểm tra xem người chơi đã xử lý xong dị thường giờ cũ chưa
+	if current_minute + 1 >= 60:
+		if not current_anomaly_resolved:
+			_trigger_anomaly_failure_death()
+			return
+
 	current_minute += 1
 	if current_minute >= 60:
 		current_minute = 0
@@ -592,8 +695,11 @@ func _advance_time() -> void:
 			
 		hour_changed.emit(current_hour)
 		
-		# Nhắc nhở đi tuần mỗi giờ chẵn
-		_set_objective("NHIỆM VỤ: Hãy bắt đầu đi tuần tra toàn bộ các lối đi siêu thị ngay lúc này (" + str(current_hour) + ":00 " + ("AM" if is_am else "PM") + ").")
+		# Kích hoạt dị thường của giờ mới
+		if current_hour == 6 and is_am:
+			pass # Chuẩn bị thắng game
+		else:
+			_trigger_hourly_anomaly()
 		
 	_update_clock_ui()
 	
@@ -628,103 +734,54 @@ func _process_horror_events(delta: float) -> void:
 		
 	var player_pos = player.global_position
 	
-	# ==================== PHÂN PHỐI QUY TẮC THEO NGÀY ====================
-	
 	# --- [NGÀY 1 & 2 & 3] Sự kiện Lối đi 7: Tiếng khóc & va chạm Jumpscare (Quy tắc 2) ---
-	if not aisle7_cry_triggered and player_pos.x >= 5.5 and player_pos.x <= 9.5 and player_pos.z >= 5.0 and player_pos.z <= 9.0:
+	# Hành lang gần Aisle 7: X=5.8-7.0 (giữa Aisle6 và 7) hoặc X=9.0-10.2 (giữa Aisle7 và 8)
+	# Shelves span Z=-11 to Z=5
+	var in_aisle7_corridor = (
+		(player_pos.x >= 5.8 and player_pos.x <= 7.0) or (player_pos.x >= 9.0 and player_pos.x <= 10.2)
+	) and player_pos.z >= -11.0 and player_pos.z <= 5.0
+	
+	if active_anomaly_type == "aisle7_cry" and not aisle7_cry_triggered and in_aisle7_corridor:
 		aisle7_cry_triggered = true
+		play_procedural_sound("cry")
 		start_dialogue_sequence([
 			" Tiếng khóc nỉ non phát ra ghê rợn từ góc tối Lối đi 7..."
 		], func():
 			player.set_physics_process(true)
-	)
+			current_anomaly_resolved = true
+			_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+		)
 	
-	# Va chạm Lối đi 7 (Luôn kích hoạt ở mọi ngày để răn đe quy tắc)
-	if player_pos.x >= 7.0 and player_pos.x <= 9.0 and player_pos.z >= -11.0 and player_pos.z <= 4.0:
+	# Va chạm Lối đi 7 - Jumpscare khi vào SÂU bên trong hành lang (với cooldown chống spam)
+	aisle7_jumpscare_cooldown -= delta
+	if in_aisle7_corridor and player_pos.z < -3.0 and aisle7_jumpscare_cooldown <= 0.0:
+		aisle7_jumpscare_cooldown = 15.0  # Cooldown 15 giây giữa các lần jumpscare
 		_trigger_aisle7_jumpscare(player)
 		
-	# --- [NGÀY 2 & 3] Sự kiện Tiếng gõ Tủ đông (Quy tắc 3) ---
-	if current_day >= 2:
-		freezer_knock_timer += delta
-		if freezer_knock_timer >= freezer_knock_interval:
-			freezer_knock_timer = 0.0
-			if player_pos.x >= 0.0 and player_pos.x <= 6.0 and player_pos.z >= -11.0 and player_pos.z <= 5.0:
-				# --- ANIMATION Rung lắc tủ đông vật lý ---
-				var shelves_node = get_tree().current_scene.find_child("Shelves", true, false)
-				if shelves_node:
-					var shelf5 = shelves_node.get_node_or_null("Shelf_Aisle5")
-					var shelf6 = shelves_node.get_node_or_null("Shelf_Aisle6")
-					if shelf5:
-						var orig5 = shelf5.position
-						var t5 = create_tween().set_loops(15)
-						t5.tween_property(shelf5, "position:x", orig5.x + 0.04, 0.04)
-						t5.tween_property(shelf5, "position:x", orig5.x - 0.04, 0.04)
-						t5.tween_callback(func(): shelf5.position = orig5)
-					if shelf6:
-						var orig6 = shelf6.position
-						var t6 = create_tween().set_loops(15)
-						t6.tween_property(shelf6, "position:x", orig6.x + 0.04, 0.04)
-						t6.tween_property(shelf6, "position:x", orig6.x - 0.04, 0.04)
-						t6.tween_callback(func(): shelf6.position = orig6)
-						
-				# Rung camera người chơi kịch tính
-				if player.has_method("shake_camera"):
-					player.shake_camera(1.2, 0.025)
-
-				# Gây nhiễu CCTV khu tủ đông (CAM 3)
-				_glitch_cctv(3, 0.7, 3.0)
-				
-				start_dialogue_sequence([
-					" Kính tủ đông DONG LANH 5 & 6 bỗng rung lắc ghê rợn vật lý, phát ra tiếng gõ cộc cộc vang dội!",
-					" Aaron: 'Ôi mẹ ơi... Tủ đông đang tự chấn động dữ dội như muốn bung kính! Phải phớt lờ đi tuần tiếp thôi!'"
-				], func():
-					player.set_physics_process(true)
-				)
-				
 	# --- [NGÀY 2 & 3] Sự kiện mất nhạc Jazz phát thanh & 20s sinh tử (Quy tắc 7) ---
-	if current_day >= 2:
-		if not jazz_outage_active:
-			jazz_outage_timer += delta
-			if jazz_outage_timer >= 100.0: # Mỗi 100 giây thực tế
-				_trigger_jazz_outage()
-		else:
-			jazz_outage_countdown -= delta
-			if countdown_label:
-				countdown_label.text = "CẢNH BÁO: KHÔI PHỤC NHẠC JAZZ TRONG: " + str(ceil(jazz_outage_countdown)) + " GIÂY!"
-			
-			if jazz_outage_countdown <= 0.0:
-				_trigger_jazz_outage_death(player)
-
-	# --- [NGÀY 2 & 3] Sự kiện Đèn Chập Tắt & Bật Cầu chì cuối hành lang ---
-	if current_day >= 2:
-		if active_blackout_aisle == 0:
-			blackout_timer += delta
-			if blackout_timer >= 80.0: # Mỗi 80 giây thực tế
-				blackout_timer = 0.0
-				_trigger_aisle_blackout(randi_range(1, 4)) # Chọn ngẫu nhiên lối đi 1 đến 4 để ngắt điện
-	
-	# --- [NGÀY 3 CHỈ ĐỊNH] Đêm Cuối: Bóng ma rình rập, Xe đẩy lạc chỗ (Quy tắc 4) & Vũng máu (Quy tắc 5) ---
-	if current_day >= 3:
-		# Xe đẩy lạc chỗ xuất hiện lúc 1:00 AM
-		if current_hour >= 1 and not has_spawned_cart and not is_instance_valid(misplaced_cart_instance) and not player.is_pushing_cart:
-			_spawn_misplaced_shopping_cart()
-			
-		# Vũng máu rỉ ra ở quầy thịt Aisle 8 lúc 2:00 AM
-		if current_hour >= 2 and not has_spawned_blood and not is_instance_valid(blood_puddle_instance):
-			_spawn_blood_puddle()
-			
-		# Cây lau nhà ở Breakroom xuất hiện để lau máu
-		if not is_instance_valid(breakroom_mop_instance) and not player.is_holding_mop and is_instance_valid(blood_puddle_instance):
-			_spawn_breakroom_mop()
-			
-		# Kiểm tra va chạm vũng máu (giẫm chân)
-		if is_instance_valid(blood_puddle_instance):
-			var dist = player_pos.distance_to(blood_puddle_instance.global_position)
-			if dist < 1.3:
-				if not player.is_holding_mop:
-					_trigger_blood_jumpscare(player)
+	if jazz_outage_active:
+		jazz_outage_countdown -= delta
+		if countdown_label:
+			countdown_label.text = "CẢNH BÁO: KHÔI PHỤC NHẠC JAZZ TRONG: " + str(ceil(jazz_outage_countdown)) + " GIÂY!"
 		
-		# Sự kiện Bóng ma người phụ nữ áo đen rình rập (Quy tắc 6)
+		if jazz_outage_countdown <= 0.0:
+			_trigger_jazz_outage_death(player)
+	
+	# --- Bóng ma rình rập, Xe đẩy lạc chỗ (Quy tắc 4) & Vũng máu (Quy tắc 5) ---
+	# Hoạt động ở MỌI NGÀY khi có sự kiện tương ứng
+	# Cây lau nhà ở Breakroom xuất hiện để lau máu
+	if not is_instance_valid(breakroom_mop_instance) and not player.is_holding_mop and is_instance_valid(blood_puddle_instance):
+		_spawn_breakroom_mop()
+		
+	# Kiểm tra va chạm vũng máu (giẫm chân)
+	if is_instance_valid(blood_puddle_instance):
+		var dist = player_pos.distance_to(blood_puddle_instance.global_position)
+		if dist < 1.3:
+			if not player.is_holding_mop:
+				_trigger_blood_jumpscare(player)
+	
+	# Sự kiện Bóng ma người phụ nữ áo đen rình rập (Quy tắc 6)
+	if active_anomaly_type == "ghost_woman" or ghost_active:
 		if not ghost_active:
 			ghost_spawn_timer += delta
 			if ghost_spawn_timer >= 60.0:
@@ -732,11 +789,24 @@ func _process_horror_events(delta: float) -> void:
 	
 	if ghost_active and is_instance_valid(ghost_instance):
 		_process_ghost_mechanic(player, delta)
+	
+	# --- HỆ THỐNG NPC DỊ NHÂN XUẤT HIỆN NGẪU NHIÊN KHI TUẦN TRA ---
+	if not creepy_npc_active:
+		creepy_npc_cooldown -= delta
+		if creepy_npc_cooldown <= 0.0:
+			creepy_npc_timer += delta
+			if creepy_npc_timer >= 45.0:  # Mỗi ~45 giây có cơ hội spawn
+				if randf() < 0.4:  # 40% cơ hội spawn
+					_spawn_creepy_npc(player)
+				creepy_npc_timer = 0.0
+	else:
+		_process_creepy_npc(player, delta)
 
 # --- PHÂN CƠ CHẾ SỰ KIỆN CHI TIẾT KÈM ANIMATION ---
 
 # 1. Jumpscare Lối đi số 7 (Kèm animation phóng vút & rung camera cực mạnh)
 func _trigger_aisle7_jumpscare(player_node) -> void:
+	play_procedural_sound("scream")
 	player_node.set_physics_process(false)
 	
 	# Hiển thị thực thể ma quái thình lình chặn mặt
@@ -791,11 +861,14 @@ func _trigger_aisle7_jumpscare(player_node) -> void:
 			red_fade.queue_free()
 			player_node.set_physics_process(true)
 			aisle7_cry_triggered = false
+			current_anomaly_resolved = true
+			_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
 		)
 	)
 
 # 2. Sự kiện Đèn Chập Tắt & Phải đi bật Cầu dao cuối hành lang (Ngày 2 & 3)
 func _trigger_aisle_blackout(aisle_num: int) -> void:
+	play_procedural_sound("glitch")
 	var shelves_node = get_tree().current_scene.find_child("Shelves", true, false)
 	if not shelves_node:
 		return
@@ -889,9 +962,10 @@ func fix_aisle_lights(aisle_num: int) -> void:
 					tween.tween_property(child, "light_energy", 0.45, 0.15)
 					
 	_set_objective("NHIỆM VỤ: Điện Lối đi " + str(aisle_num) + " đã được phục hồi thành công!")
+	current_anomaly_resolved = true
 	var timer = get_tree().create_timer(2.0)
 	timer.timeout.connect(func():
-		_set_objective("NHIỆM VỤ: Tuần tra toàn bộ siêu thị mỗi 1 TIẾNG ảo một lần.")
+		_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
 	)
 
 # 3. Kích hoạt loa mất nhạc phát thanh
@@ -950,10 +1024,13 @@ func reset_jazz_music() -> void:
 		var player = get_tree().current_scene.find_child("Player", true, false)
 		if player:
 			player.set_physics_process(true)
+		current_anomaly_resolved = true
+		_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
 	)
 
 # Game Over nếu hết 20 giây chưa bật lại nhạc
 func _trigger_jazz_outage_death(player_node) -> void:
+	play_procedural_sound("scream")
 	player_node.set_physics_process(false)
 	
 	if is_instance_valid(countdown_label):
@@ -981,8 +1058,8 @@ func _spawn_ghost_woman() -> void:
 	var ghost = Node3D.new()
 	ghost.name = "GhostWoman"
 	
-	# Chọn ngẫu nhiên Lối đi 2 hoặc Lối đi 3 để đứng ở cuối hành lang tối (z = -10.0)
-	var spawn_x = -8.0 if randf() > 0.5 else -4.8
+	# Chọn ngẫu nhiên hành lang giữa Aisle 2-3 (X=-6.4) hoặc Aisle 3-4 (X=-3.2)
+	var spawn_x = -6.4 if randf() > 0.5 else -3.2
 	ghost.position = Vector3(spawn_x, 0.9, -10.0)
 	
 	var mesh_inst = MeshInstance3D.new()
@@ -1048,6 +1125,7 @@ func _despawn_ghost() -> void:
 
 # jumpscare Bóng ma vồ (Kèm animation vồ sát mặt và rung lắc camera dữ dội)
 func _trigger_ghost_jumpscare(player_node) -> void:
+	play_procedural_sound("scream")
 	player_node.set_physics_process(false)
 	
 	# Màn hình đỏ ngầu
@@ -1082,11 +1160,12 @@ func _trigger_ghost_jumpscare(player_node) -> void:
 # 1. Sinh xe đẩy hàng lạc chỗ (Quy tắc 4)
 func _spawn_misplaced_shopping_cart() -> void:
 	has_spawned_cart = true
+	_set_objective("NHIỆM VỤ TUẦN TRA 1:00 AM: Có xe đẩy hàng nằm lạc lối ở Lối đi 3! Hãy tới đẩy nó trả về hàng xe xếp ở Sảnh chính.")
 	
 	var box = StaticBody3D.new()
 	box.name = "MisplacedCart"
-	# Spawn lệch ở lối đi 3 (X = -4.8, Z = 0.0)
-	box.position = Vector3(-4.8, 0.45, 0.0)
+	# Spawn ở hành lang giữa lối đi 3 và 4 (X = -3.2)
+	box.position = Vector3(-3.2, 0.45, -1.0)
 	
 	var col = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
@@ -1110,7 +1189,8 @@ func _spawn_misplaced_shopping_cart() -> void:
 	# Thêm tay cầm đỏ
 	var handle_mesh = MeshInstance3D.new()
 	var cyl = CylinderMesh.new()
-	cyl.radius = 0.015
+	cyl.top_radius = 0.015
+	cyl.bottom_radius = 0.015
 	cyl.height = 0.7
 	handle_mesh.mesh = cyl
 	var h_mat = StandardMaterial3D.new()
@@ -1214,7 +1294,8 @@ func _spawn_cart_return_zone() -> void:
 			" Aaron: 'Hơ... Đã trả xong xe đẩy hàng. Quy tắc 4 hoàn thành an toàn!'"
 		], func():
 			player_node.set_physics_process(true)
-			_set_objective("NHIỆM VỤ: Tuần tra toàn bộ siêu thị mỗi 1 TIẾNG ảo một lần.")
+			current_anomaly_resolved = true
+			_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
 		)
 		
 		cart_return_zone_instance = null
@@ -1229,10 +1310,11 @@ func _spawn_cart_return_zone() -> void:
 # 2. Sinh Vũng máu khu thịt Aisle 8 (Quy tắc 5)
 func _spawn_blood_puddle() -> void:
 	has_spawned_blood = true
+	_set_objective("NHIỆM VỤ TUẦN TRA 2:00 AM: Có vũng máu rỉ ra ở Quầy thịt Lối 8! Hãy đi tìm Cây lau nhà ở Breakroom để lau sạch vũng máu!")
 	
 	var puddle = StaticBody3D.new()
 	puddle.name = "BloodPuddle"
-	puddle.position = Vector3(8.0, 0.02, 0.0) # Aisle 8 Meat Section
+	puddle.position = Vector3(9.6, 0.02, -2.0) # Hành lang giữa Aisle 7 và 8
 	
 	var col = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
@@ -1275,20 +1357,15 @@ func _spawn_blood_puddle() -> void:
 		scale_tween.tween_property(puddle, "scale", Vector3(0.001, 1.0, 0.001), 1.5)
 		
 		scale_tween.tween_callback(func():
-			player_node.set_holding_mop(false)
-			
 			start_dialogue_sequence([
 				" Những cú đẩy chổi liên hồi đã lau dọn sạch bóng vũng máu rùng rợn quầy thịt!",
-				" Aaron: 'Sạch sẽ rồi! May mắn là mình đã dọn xong trước khi bất cứ thứ gì phát hiện ra. Quy tắc 5 hoàn thành!'"
+				" Aaron: 'Sạch sẽ rồi! Nhưng mình phải đem cây lau nhà trả về phòng nghỉ Breakroom theo đúng Quy tắc 5!'"
 			], func():
 				player_node.set_physics_process(true)
-				_set_objective("NHIỆM VỤ: Tuần tra toàn bộ siêu thị mỗi 1 TIẾNG ảo một lần.")
+				_set_objective("NHIỆM VỤ: Vũng máu đã sạch! Hãy đem cây lau nhà trả về phòng nghỉ Breakroom.")
+				_spawn_mop_return_zone()
 			)
 			
-			# Hồi cây lau nhà về lại Breakroom
-			if is_instance_valid(breakroom_mop_instance):
-				breakroom_mop_instance.visible = true
-				
 			blood_puddle_instance = null
 			puddle.queue_free()
 		)
@@ -1320,7 +1397,8 @@ func _spawn_breakroom_mop() -> void:
 	var cyl = CylinderMesh.new()
 	cyl.radial_segments = 8
 	cyl.rings = 1
-	cyl.radius = 0.02
+	cyl.top_radius = 0.02
+	cyl.bottom_radius = 0.02
 	cyl.height = 1.0
 	mesh_inst.mesh = cyl
 	
@@ -1365,8 +1443,254 @@ func _spawn_breakroom_mop() -> void:
 	get_tree().current_scene.add_child(mop)
 	breakroom_mop_instance = mop
 
+# 4. Sinh vùng trả cây lau nhà về Breakroom (Quy tắc 5)
+func _spawn_mop_return_zone() -> void:
+	if is_instance_valid(mop_return_zone_instance):
+		mop_return_zone_instance.queue_free()
+		
+	var zone = StaticBody3D.new()
+	zone.name = "MopReturnZone"
+	zone.position = Vector3(-12.5, 0.05, 8.5) # Gần vị trí cây lau nhà trong Breakroom
+	
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(2.0, 0.1, 2.0)
+	col.shape = shape
+	zone.add_child(col)
+	
+	var mesh_inst = MeshInstance3D.new()
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(1.8, 0.02, 1.8)
+	mesh_inst.mesh = mesh
+	
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.6, 0.9, 0.3)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.emission_enabled = true
+	mat.emission = Color(0.1, 0.3, 0.6)
+	mesh_inst.material_override = mat
+	zone.add_child(mesh_inst)
+	
+	zone.add_to_group("interactable")
+	zone.set("prompt_message", "[E] Trả lại cây lau nhà (Quy tắc 5)")
+	
+	zone.set_meta("interact_callable", func(player_node):
+		if not player_node.is_holding_mop:
+			start_dialogue_sequence([" Aaron: 'Mình phải cầm cây lau nhà thì mới trả lại được!'"], func(): player_node.set_physics_process(true))
+			return
+			
+		player_node.set_holding_mop(false)
+		
+		# Hiện lại cây lau nhà tại Breakroom
+		if is_instance_valid(breakroom_mop_instance):
+			breakroom_mop_instance.visible = true
+		
+		start_dialogue_sequence([
+			" Aaron: 'Đã trả lại cây lau nhà về chỗ cũ. Quy tắc 5 hoàn thành!'"
+		], func():
+			player_node.set_physics_process(true)
+			current_anomaly_resolved = true
+			_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+		)
+		
+		mop_return_zone_instance = null
+		zone.queue_free()
+	)
+	
+	zone.set_script(load("res://scripts/custom_interactable.gd"))
+	
+	get_tree().current_scene.add_child(zone)
+	mop_return_zone_instance = zone
+
+# ==================== HỆ THỐNG NPC DỊ NHÂN CẢN ĐƯỜNG & JUMPSCARE ====================
+
+func _spawn_creepy_npc(player_ref) -> void:
+	if is_instance_valid(creepy_npc_instance):
+		creepy_npc_instance.queue_free()
+	
+	# Chọn ngẫu nhiên loại NPC và vị trí spawn
+	var npc_def = CREEPY_NPC_DEFS[randi() % CREEPY_NPC_DEFS.size()]
+	
+	# Tìm vị trí spawn gần player nhưng không quá gần (5-12m)
+	var valid_points = []
+	for pt in CREEPY_SPAWN_POINTS:
+		var adjusted = Vector3(pt.x, pt.y + npc_def["height"] * 0.5, pt.z)
+		var dist = player_ref.global_position.distance_to(adjusted)
+		if dist >= 5.0 and dist <= 14.0:
+			valid_points.append(adjusted)
+	
+	if valid_points.is_empty():
+		return
+	
+	var spawn_pos = valid_points[randi() % valid_points.size()]
+	
+	var npc = Node3D.new()
+	npc.name = npc_def["name"]
+	npc.position = spawn_pos
+	npc.scale = npc_def["scale"]
+	
+	# CONFIG: Nếu có model 3D thực sự, dùng "scene" thay vì "capsule"
+	if npc_def["mesh_type"] == "scene" and npc_def.has("scene_path"):
+		var scene = load(npc_def["scene_path"])
+		if scene:
+			var model = scene.instantiate()
+			npc.add_child(model)
+	else:
+		# Tạo mesh capsule placeholder
+		var mesh_inst = MeshInstance3D.new()
+		var mesh = CapsuleMesh.new()
+		mesh.radius = npc_def["radius"]
+		mesh.height = npc_def["height"]
+		mesh_inst.mesh = mesh
+		
+		var mat = StandardMaterial3D.new()
+		mat.albedo_color = npc_def["color"]
+		mat.roughness = 0.95
+		if npc_def["emission"] != Color(0, 0, 0):
+			mat.emission_enabled = true
+			mat.emission = npc_def["emission"]
+		mesh_inst.material_override = mat
+		npc.add_child(mesh_inst)
+		
+		# Thêm mắt phát sáng đỏ rùng rợn cho placeholder
+		for eye_x in [-0.1, 0.1]:
+			var eye = MeshInstance3D.new()
+			var eye_mesh = SphereMesh.new()
+			eye_mesh.radius = 0.04
+			eye.mesh = eye_mesh
+			var eye_mat = StandardMaterial3D.new()
+			eye_mat.albedo_color = Color(1.0, 0.0, 0.0)
+			eye_mat.emission_enabled = true
+			eye_mat.emission = Color(1.0, 0.0, 0.0)
+			eye.material_override = eye_mat
+			eye.position = Vector3(eye_x, npc_def["height"] * 0.35, -npc_def["radius"] - 0.02)
+			npc.add_child(eye)
+	
+	# Lưu metadata để truy xuất sau
+	npc.set_meta("npc_def", npc_def)
+	npc.set_meta("spawn_time", Time.get_ticks_msec())
+	
+	get_tree().current_scene.add_child(npc)
+	creepy_npc_instance = npc
+	creepy_npc_active = true
+	creepy_npc_look_timer = 0.0
+	
+	# Phát tiếng nhiễu tĩnh khi NPC xuất hiện
+	play_procedural_sound("static")
+
+func _process_creepy_npc(player_ref, delta: float) -> void:
+	if not is_instance_valid(creepy_npc_instance):
+		_despawn_creepy_npc()
+		return
+	
+	var dist = player_ref.global_position.distance_to(creepy_npc_instance.global_position)
+	
+	# NPC biến mất nếu player lùi xa > 16m
+	if dist > 16.0:
+		_despawn_creepy_npc()
+		return
+	
+	# NPC tự biến mất sau 25 giây nếu player không tới gần
+	var elapsed = (Time.get_ticks_msec() - int(creepy_npc_instance.get_meta("spawn_time"))) / 1000.0
+	if elapsed > 25.0:
+		# Biến mất kèm hiệu ứng nhấp nháy
+		var tween = create_tween().set_loops(5)
+		tween.tween_property(creepy_npc_instance, "visible", false, 0.08)
+		tween.tween_property(creepy_npc_instance, "visible", true, 0.08)
+		tween.tween_callback(func(): _despawn_creepy_npc())
+		return
+	
+	# Animation giật giật rung lắc liên tục (micro-twitch)
+	if randi() % 30 == 0:
+		var orig_pos = creepy_npc_instance.position
+		creepy_npc_instance.position.x += randf_range(-0.03, 0.03)
+		get_tree().create_timer(0.06).timeout.connect(func():
+			if is_instance_valid(creepy_npc_instance):
+				creepy_npc_instance.position = orig_pos
+		)
+	
+	# Phát hiện player nhìn thẳng vào NPC
+	var cam = player_ref.get_node_or_null("Head/Camera3D")
+	if is_instance_valid(cam) and dist < 8.0:
+		var to_npc = (creepy_npc_instance.global_position - cam.global_position).normalized()
+		var cam_forward = -cam.global_transform.basis.z.normalized()
+		var dot = cam_forward.dot(to_npc)
+		
+		if dot > 0.85:
+			creepy_npc_look_timer += delta
+			# Nhìn > 1.5 giây → Jumpscare!
+			if creepy_npc_look_timer >= 1.5:
+				_trigger_creepy_npc_jumpscare(player_ref)
+		else:
+			creepy_npc_look_timer = move_toward(creepy_npc_look_timer, 0.0, delta * 0.5)
+	
+	# Nếu player lại quá gần (< 2.5m) mà không nhìn → NPC vồ
+	if dist < 2.5:
+		_trigger_creepy_npc_jumpscare(player_ref)
+
+func _despawn_creepy_npc() -> void:
+	creepy_npc_active = false
+	creepy_npc_look_timer = 0.0
+	creepy_npc_cooldown = randf_range(30.0, 60.0)  # Nghỉ 30-60s trước khi spawn tiếp
+	if is_instance_valid(creepy_npc_instance):
+		creepy_npc_instance.queue_free()
+		creepy_npc_instance = null
+
+func _trigger_creepy_npc_jumpscare(player_node) -> void:
+	if not is_instance_valid(creepy_npc_instance):
+		return
+	
+	var npc_def = creepy_npc_instance.get_meta("npc_def")
+	
+	play_procedural_sound("scream")
+	player_node.set_physics_process(false)
+	
+	# Màn hình chớp đỏ
+	var red_fade = ColorRect.new()
+	red_fade.anchors_preset = Control.PRESET_FULL_RECT
+	red_fade.color = Color(0.8, 0.0, 0.0, 0.9)
+	current_hud.add_child(red_fade)
+	
+	# Animation NPC lao vào mặt
+	var cam = player_node.get_node("Head/Camera3D")
+	var tween = create_tween().set_parallel(true)
+	tween.tween_property(creepy_npc_instance, "global_position", cam.global_position - cam.global_transform.basis.z * 0.5, 0.2)
+	tween.tween_property(creepy_npc_instance, "scale", Vector3(4.0, 4.0, 4.0), 0.2)
+	
+	# Rung camera
+	if player_node.has_method("shake_camera"):
+		player_node.shake_camera(0.7, 0.18)
+	
+	# Mất thể lực
+	player_node.current_stamina = max(player_node.current_stamina - 40.0, 0.0)
+	
+	var t = get_tree().create_timer(0.35)
+	t.timeout.connect(func():
+		# Ném về breakroom
+		player_node.global_position = Vector3(-10.5, 0.5, 10.5)
+		
+		start_dialogue_sequence([
+			" " + npc_def["scare_text"],
+			" Aaron: 'Trời ơi...! Thứ gì vừa rồi... Tim mình muốn vỡ tung rồi! Phải bình tĩnh lại...'"
+		], func():
+			red_fade.queue_free()
+			player_node.set_physics_process(true)
+		)
+		
+		_despawn_creepy_npc()
+	)
+
+# Trigger test NPC dị nhân từ bảng thử nghiệm
+func trigger_creepy_npc_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	var player = get_tree().current_scene.find_child("Player", true, false)
+	if player:
+		_spawn_creepy_npc(player)
+
 # Jumpscare khi giẫm vào vũng máu (Quy tắc 5)
 func _trigger_blood_jumpscare(player_node) -> void:
+	play_procedural_sound("scream")
 	player_node.set_physics_process(false)
 	
 	# Chớp đỏ chói mắt
@@ -1462,6 +1786,7 @@ func _transition_to_next_day() -> void:
 # --- HỆ THỐNG CCTV CAMERA ---
 
 func _glitch_cctv(cam_index: int, intensity: float = 0.7, duration: float = 2.5) -> void:
+	play_procedural_sound("static")
 	if is_instance_valid(active_cctv_canvas) and active_cctv_canvas.has_method("glitch_camera"):
 		active_cctv_canvas.glitch_camera(cam_index, intensity, duration)
 
@@ -1514,3 +1839,444 @@ func toggle_rules_ui(player_node) -> void:
 				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 				player_node.set_physics_process(true)
 		)
+
+# --- HỆ THỐNG ĐIỀU PHỐI DỊ THƯỜNG TUẦN TRA THEO GIỜ ---
+
+func _trigger_hourly_anomaly() -> void:
+	current_anomaly_resolved = false
+	aisle7_cry_triggered = false
+	
+	# Xoá các thực thể / tương tác cũ nếu còn tồn tại
+	if is_instance_valid(freezer_inspect_box_instance):
+		freezer_inspect_box_instance.queue_free()
+		freezer_inspect_box_instance = null
+		
+	# Bảng phân phối sự kiện theo Ngày và Giờ
+	# 12:00 AM được coi là giờ chuẩn bị, ca tuần tra thực tế bắt đầu từ 1:00 AM
+	match current_day:
+		1:
+			match current_hour:
+				1:
+					active_anomaly_type = "aisle7_cry"
+					_set_objective("NHIỆM VỤ TUẦN TRA 1:00 AM: Có tiếng khóc nỉ non ghê rợn ở Lối đi 7. Hãy tới kiểm tra!")
+				2:
+					active_anomaly_type = "blackout"
+					_trigger_aisle_blackout(2)
+				3:
+					active_anomaly_type = "aisle7_cry"
+					_set_objective("NHIỆM VỤ TUẦN TRA 3:00 AM: Tiếng khóc u uất lại vang lên ở Lối đi 7. Hãy tới kiểm tra!")
+				4:
+					active_anomaly_type = "blackout"
+					_trigger_aisle_blackout(4)
+				5:
+					active_anomaly_type = "blackout"
+					_trigger_aisle_blackout(1)
+				_:
+					current_anomaly_resolved = true
+					_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+		2:
+			match current_hour:
+				1:
+					active_anomaly_type = "freezer_vibration"
+					_trigger_freezer_vibration_anomaly()
+					_set_objective("NHIỆM VỤ TUẦN TRA 1:00 AM: Tủ đông 5 & 6 đang rung lắc dữ dội. Hãy tới kiểm tra!")
+				2:
+					active_anomaly_type = "jazz_outage"
+					_trigger_jazz_outage()
+				3:
+					active_anomaly_type = "blackout"
+					_trigger_aisle_blackout(3)
+				4:
+					active_anomaly_type = "jazz_outage"
+					_trigger_jazz_outage()
+				5:
+					active_anomaly_type = "freezer_vibration"
+					_trigger_freezer_vibration_anomaly()
+					_set_objective("NHIỆM VỤ TUẦN TRA 5:00 AM: Tiếng gõ vang dội phát ra từ Tủ đông 5 & 6. Hãy tới kiểm tra!")
+				_:
+					current_anomaly_resolved = true
+					_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+		3:
+			match current_hour:
+				1:
+					active_anomaly_type = "misplaced_cart"
+					_spawn_misplaced_shopping_cart()
+				2:
+					active_anomaly_type = "blood_puddle"
+					_spawn_blood_puddle()
+				3:
+					active_anomaly_type = "ghost_woman"
+					_spawn_ghost_woman()
+					_set_objective("NHIỆM VỤ TUẦN TRA 3:00 AM: CCTV phát hiện bóng ma ở lối đi 2 & 3. Hãy tắt đèn pin và đi lùi đuổi bóng ma!")
+				4:
+					active_anomaly_type = "jazz_outage"
+					_trigger_jazz_outage()
+				5:
+					active_anomaly_type = "blackout"
+					_trigger_aisle_blackout(4)
+				_:
+					current_anomaly_resolved = true
+					_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+
+# Kích hoạt sự kiện gõ tủ đông (Ngăn chặn chập chờn ngẫu nhiên)
+func _trigger_freezer_vibration_anomaly() -> void:
+	var shelves_node = get_tree().current_scene.find_child("Shelves", true, false)
+	if shelves_node:
+		var shelf5 = shelves_node.get_node_or_null("Shelf_Aisle5")
+		var shelf6 = shelves_node.get_node_or_null("Shelf_Aisle6")
+		if shelf5:
+			var orig5 = shelf5.position
+			var t5 = create_tween().set_loops(15)
+			t5.tween_property(shelf5, "position:x", orig5.x + 0.04, 0.04)
+			t5.tween_property(shelf5, "position:x", orig5.x - 0.04, 0.04)
+			t5.tween_callback(func(): shelf5.position = orig5)
+		if shelf6:
+			var orig6 = shelf6.position
+			var t6 = create_tween().set_loops(15)
+			t6.tween_property(shelf6, "position:x", orig6.x + 0.04, 0.04)
+			t6.tween_property(shelf6, "position:x", orig6.x - 0.04, 0.04)
+			t6.tween_callback(func(): shelf6.position = orig6)
+			
+	var player = get_tree().current_scene.find_child("Player", true, false)
+	if player and player.has_method("shake_camera"):
+		player.shake_camera(1.2, 0.025)
+
+	# Gây nhiễu CCTV khu tủ đông (CAM 3)
+	_glitch_cctv(3, 0.7, 3.0)
+	_spawn_freezer_inspect_box()
+
+# Sinh điểm tương tác tủ đông
+func _spawn_freezer_inspect_box() -> void:
+	if is_instance_valid(freezer_inspect_box_instance):
+		freezer_inspect_box_instance.queue_free()
+		
+	var box = StaticBody3D.new()
+	box.name = "FreezerInspectBox"
+	# Đặt giữa tủ đông 5 và 6 (X = 3.2, Z = -3.0)
+	box.position = Vector3(3.2, 1.2, -3.0)
+	
+	var col = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(0.5, 0.5, 0.5)
+	col.shape = shape
+	box.add_child(col)
+	
+	box.add_to_group("interactable")
+	box.set("prompt_message", "[E] Kiểm tra và phớt lờ tiếng gõ tủ đông (Quy tắc 3)")
+	
+	box.set_meta("interact_callable", func(player_node):
+		player_node.set_physics_process(false)
+		start_dialogue_sequence([
+			" Aaron: 'Tiếng gõ tủ đông đang phát ra cộc cộc dữ dội... Quy tắc 3 dặn phải hoàn toàn phớt lờ nó.'",
+			" Aaron: 'Đã hoàn thành kiểm tra và phớt lờ thành công. Ca tuần tra giờ này an toàn!'"
+		], func():
+			player_node.set_physics_process(true)
+			current_anomaly_resolved = true
+			_set_objective("NHIỆM VỤ GIỜ NÀY HOÀN THÀNH! Hãy nghỉ ngơi hoặc theo dõi CCTV.")
+			if is_instance_valid(freezer_inspect_box_instance):
+				freezer_inspect_box_instance.queue_free()
+				freezer_inspect_box_instance = null
+		)
+	)
+	box.set_script(load("res://scripts/custom_interactable.gd"))
+	get_tree().current_scene.add_child(box)
+	freezer_inspect_box_instance = box
+
+# Phạt Game Over nếu không đi tuần tra xử lý dị thường
+func _trigger_anomaly_failure_death() -> void:
+	play_procedural_sound("scream")
+	var player_node = get_tree().current_scene.find_child("Player", true, false)
+	if player_node:
+		player_node.set_physics_process(false)
+		
+	if is_instance_valid(countdown_label):
+		countdown_label.queue_free()
+		
+	var red_fade = ColorRect.new()
+	red_fade.anchors_preset = Control.PRESET_FULL_RECT
+	red_fade.color = Color(0.1, 0.0, 0.0, 1.0)
+	current_hud.add_child(red_fade)
+	
+	start_dialogue_sequence([
+		" Một lực lượng tăm tối vô hình bỗng ập vào siêu thị khi đồng hồ chuyển sang giờ mới...",
+		" BẠN ĐÃ VI PHẠM QUY TẮC TUẦN TRA. BẠN ĐÃ BỎ QUA CÁC DỊ THƯỜNG VÀ KHÔNG HOÀN THÀNH NHIỆM VỤ... [GAME OVER!]"
+	], func():
+		game_over.emit(false)
+		get_tree().reload_current_scene()
+	)
+
+# ==================== PHÂN HỆ THỬ NGHIỆM KINH DỊ & CHỌN NGÀY TRỰC ====================
+
+var active_horror_test_canvas: CanvasLayer = null
+var horror_test_ui_script = preload("res://scripts/horror_test_ui.gd")
+
+func toggle_horror_test_ui(player_node) -> void:
+	if is_instance_valid(active_horror_test_canvas):
+		active_horror_test_canvas.queue_free()
+		active_horror_test_canvas = null
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		player_node.set_physics_process(true)
+	else:
+		# Đóng các giao diện UI khác nếu đang mở
+		if is_instance_valid(active_cctv_canvas):
+			toggle_cctv_ui(player_node)
+		if is_instance_valid(active_scroll_canvas):
+			toggle_rules_ui(player_node)
+			
+		active_horror_test_canvas = CanvasLayer.new()
+		active_horror_test_canvas.layer = 120
+		
+		var test_ui = Control.new()
+		test_ui.set_script(horror_test_ui_script)
+		active_horror_test_canvas.add_child(test_ui)
+		
+		get_tree().current_scene.add_child(active_horror_test_canvas)
+		
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		player_node.set_physics_process(false)
+
+func jump_to_day(day_num: int) -> void:
+	# Đóng các canvas đang mở
+	if is_instance_valid(active_cctv_canvas):
+		active_cctv_canvas.queue_free()
+		active_cctv_canvas = null
+	if is_instance_valid(active_scroll_canvas):
+		active_scroll_canvas.queue_free()
+		active_scroll_canvas = null
+	if is_instance_valid(active_horror_test_canvas):
+		active_horror_test_canvas.queue_free()
+		active_horror_test_canvas = null
+		
+	# Xoá toàn bộ thực thể / tương tác cũ
+	if is_instance_valid(freezer_inspect_box_instance):
+		freezer_inspect_box_instance.queue_free()
+		freezer_inspect_box_instance = null
+	if is_instance_valid(misplaced_cart_instance):
+		misplaced_cart_instance.queue_free()
+		misplaced_cart_instance = null
+	if is_instance_valid(cart_return_zone_instance):
+		cart_return_zone_instance.queue_free()
+		cart_return_zone_instance = null
+	if is_instance_valid(blood_puddle_instance):
+		blood_puddle_instance.queue_free()
+		blood_puddle_instance = null
+	if is_instance_valid(breakroom_mop_instance):
+		breakroom_mop_instance.queue_free()
+		breakroom_mop_instance = null
+	if is_instance_valid(mop_return_zone_instance):
+		mop_return_zone_instance.queue_free()
+		mop_return_zone_instance = null
+	if is_instance_valid(ghost_instance):
+		ghost_instance.queue_free()
+		ghost_instance = null
+	if is_instance_valid(creepy_npc_instance):
+		creepy_npc_instance.queue_free()
+		creepy_npc_instance = null
+	creepy_npc_active = false
+	creepy_npc_timer = 0.0
+	creepy_npc_cooldown = 0.0
+	if is_instance_valid(breaker_switch_instance):
+		breaker_switch_instance.queue_free()
+		breaker_switch_instance = null
+	if is_instance_valid(countdown_label):
+		countdown_label.queue_free()
+		countdown_label = null
+		
+	# Khởi tạo lại trạng thái
+	current_day = day_num
+	is_prologue = false
+	current_hour = 12
+	current_minute = 0
+	is_am = true
+	time_accumulator = 0.0
+	current_anomaly_resolved = true
+	active_anomaly_type = ""
+	jazz_outage_active = false
+	ghost_active = false
+	has_spawned_cart = false
+	has_spawned_blood = false
+	has_called_clive = true # Cho phép đọc quy tắc bằng phím N
+	
+	# Khôi phục âm nhạc
+	var music_player = get_tree().current_scene.get_node_or_null("BackgroundJazzMusic")
+	if music_player and not music_player.playing:
+		music_player.play()
+		
+	# Bật lại đèn tất cả lối đi
+	var shelves_node = get_tree().current_scene.find_child("Shelves", true, false)
+	if shelves_node:
+		for shelf in shelves_node.get_children():
+			for child in shelf.get_children():
+				if child is OmniLight3D:
+					child.light_energy = 0.45
+					
+	# Di chuyển Player về phòng nghỉ
+	var player_node = get_tree().current_scene.find_child("Player", true, false)
+	if player_node:
+		player_node.global_position = Vector3(-10.5, 0.5, 10.5)
+		player_node.current_stamina = 100.0
+		player_node.is_exhausted = false
+		player_node.set_holding_mop(false)
+		player_node.set_pushing_cart(false)
+		player_node.set_physics_process(true)
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		
+	# Màn hình Splash
+	var day_splash = Label.new()
+	day_splash.anchors_preset = Control.PRESET_FULL_RECT
+	day_splash.text = "TEST CA TRỰC: NGÀY " + str(day_num) + "\n\nBẮT ĐẦU VÀO LÚC 12:00 AM"
+	day_splash.horizontal_alignment = HorizontalAlignment.HORIZONTAL_ALIGNMENT_CENTER
+	day_splash.vertical_alignment = VerticalAlignment.VERTICAL_ALIGNMENT_CENTER
+	
+	var settings = LabelSettings.new()
+	settings.font_size = 40
+	settings.font_color = Color(1.0, 0.3, 0.3)
+	settings.outline_size = 8
+	settings.outline_color = Color(0, 0, 0)
+	day_splash.label_settings = settings
+	if current_hud:
+		current_hud.add_child(day_splash)
+		
+	if is_instance_valid(screen_fade):
+		screen_fade.color.a = 1.0
+		var fade_tween = create_tween()
+		fade_tween.tween_property(screen_fade, "color:a", 0.0, 1.5)
+		
+	var t = get_tree().create_timer(2.5)
+	t.timeout.connect(func():
+		if is_instance_valid(day_splash):
+			day_splash.queue_free()
+		_set_objective("BẮT ĐẦU THỬ NGHIỆM NGÀY " + str(day_num) + "! Bấm H hoặc F2 để mở bảng hiệu ứng.")
+	)
+
+func trigger_aisle7_cry_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "aisle7_cry"
+	aisle7_cry_triggered = false
+	_set_objective("NHIỆM VỤ TEST: Có tiếng khóc nỉ non ở Lối đi 7. Hãy tới kiểm tra!")
+
+func trigger_blackout_test(aisle_num: int) -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	# Dọn dẹp cầu dao cũ nếu có
+	if is_instance_valid(breaker_switch_instance):
+		breaker_switch_instance.queue_free()
+		breaker_switch_instance = null
+	_trigger_aisle_blackout(aisle_num)
+
+func trigger_freezer_vibration_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "freezer_vibration"
+	if is_instance_valid(freezer_inspect_box_instance):
+		freezer_inspect_box_instance.queue_free()
+		freezer_inspect_box_instance = null
+	_trigger_freezer_vibration_anomaly()
+	_set_objective("NHIỆM VỤ TEST: Tủ đông 5 & 6 đang rung lắc dữ dội. Hãy tới kiểm tra!")
+
+func trigger_jazz_outage_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "jazz_outage"
+	if is_instance_valid(countdown_label):
+		countdown_label.queue_free()
+		countdown_label = null
+	_trigger_jazz_outage()
+
+func trigger_misplaced_cart_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "misplaced_cart"
+	has_spawned_cart = false
+	if is_instance_valid(misplaced_cart_instance):
+		misplaced_cart_instance.queue_free()
+		misplaced_cart_instance = null
+	if is_instance_valid(cart_return_zone_instance):
+		cart_return_zone_instance.queue_free()
+		cart_return_zone_instance = null
+	_spawn_misplaced_shopping_cart()
+
+func trigger_blood_puddle_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "blood_puddle"
+	has_spawned_blood = false
+	if is_instance_valid(blood_puddle_instance):
+		blood_puddle_instance.queue_free()
+		blood_puddle_instance = null
+	if is_instance_valid(breakroom_mop_instance):
+		breakroom_mop_instance.queue_free()
+		breakroom_mop_instance = null
+	_spawn_blood_puddle()
+
+func trigger_ghost_woman_test() -> void:
+	if is_prologue:
+		jump_to_day(current_day)
+	current_anomaly_resolved = false
+	active_anomaly_type = "ghost_woman"
+	if is_instance_valid(ghost_instance):
+		ghost_instance.queue_free()
+		ghost_instance = null
+	_spawn_ghost_woman()
+	_set_objective("NHIỆM VỤ TEST: Bóng ma xuất hiện ở lối đi 2 & 3. Hãy tắt đèn pin và đi lùi đuổi bóng ma!")
+
+func play_procedural_sound(type: String) -> void:
+	var stream = AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 22050
+	stream.stereo = false
+	
+	var duration = 1.0
+	if type == "scream":
+		duration = 0.95
+	elif type == "static":
+		duration = 0.7
+	elif type == "glitch":
+		duration = 0.5
+	elif type == "cry":
+		duration = 1.8
+		
+	var num_samples = int(stream.mix_rate * duration)
+	var byte_data = PackedByteArray()
+	byte_data.resize(num_samples * 2)
+	
+	var time = 0.0
+	for i in range(num_samples):
+		var sample = 0.0
+		var progress = float(i) / num_samples
+		if type == "scream":
+			var noise = randf_range(-1.0, 1.0)
+			var f_sweep = lerp(1600.0, 60.0, progress)
+			var sine = sin(time * 2.0 * PI * f_sweep)
+			sample = (noise * 0.7 + sine * 0.3) * (1.0 - progress)
+		elif type == "static":
+			var noise = randf_range(-1.0, 1.0)
+			var mod = 0.55 + 0.45 * sin(time * 2.0 * PI * 10.0)
+			sample = noise * 0.28 * mod * (1.0 - progress)
+		elif type == "glitch":
+			var noise = randf_range(-1.0, 1.0) if randf() > 0.94 else 0.0
+			sample = noise * 0.45
+		elif type == "cry":
+			var base_freq = 320.0 + sin(time * 2.0 * PI * 4.0) * 15.0
+			sample = (sin(time * 2.0 * PI * base_freq) * 0.5 + sin(time * 2.0 * PI * (base_freq + 6.0)) * 0.5) * 0.25 * (1.0 - progress)
+			
+		sample = clamp(sample, -1.0, 1.0)
+		var val = int(sample * 32767.0)
+		byte_data.encode_s16(i * 2, val)
+		time += 1.0 / stream.mix_rate
+		
+	stream.data = byte_data
+	
+	var player = AudioStreamPlayer.new()
+	player.stream = stream
+	player.volume_db = -2.0 if type == "scream" else -8.0
+	get_tree().current_scene.add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
