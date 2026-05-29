@@ -64,6 +64,26 @@ func _unhandled_input(event: InputEvent) -> void:
 		var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
 		if game_manager and not game_manager.is_prologue:
 			game_manager.toggle_rules_ui(self)
+
+	# Bật/tắt màn hình CCTV — CHỈ HOẠT ĐỘNG KHI Ở TRONG PHÒNG NGHỈ
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
+		var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
+		if game_manager and not game_manager.is_prologue:
+			# Phòng nghỉ: center (-10.5, y, 10.5), kích thước 6x6
+			var pos = global_position
+			var in_breakroom = (pos.x >= -13.5 and pos.x <= -7.5 and pos.z >= 7.5 and pos.z <= 13.5)
+			if in_breakroom:
+				game_manager.toggle_cctv_ui(self)
+			else:
+				# Gợi ý nhỏ nếu bấm nhầm bên ngoài
+				var obj_node = get_node_or_null("HUD/ObjectiveLabel")
+				if obj_node:
+					var old_text = obj_node.text
+					obj_node.text = "⚠ Camera CCTV chỉ xem được trong Phòng nghỉ Breakroom."
+					get_tree().create_timer(2.5).timeout.connect(func():
+						if is_instance_valid(obj_node) and obj_node.text.begins_with("⚠"):
+							obj_node.text = old_text
+					)
 	
 	# Nhấn ESC để giải phóng chuột (dễ debug)
 	if event.is_action_pressed("ui_cancel"):

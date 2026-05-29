@@ -2,7 +2,7 @@ extends StaticBody3D
 
 var prompt_message = "[E] Bật lại nhạc Jazz phát thanh (Nhấn nút Reset đỏ)"
 
-func interact(player_node) -> void:
+func interact(_player_node) -> void:
 	var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
 	if game_manager:
 		# Animation nhấn nút vật lý (Tween thụt sâu rồi nhả ra)

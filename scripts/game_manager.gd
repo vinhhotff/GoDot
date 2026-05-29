@@ -65,6 +65,10 @@ var blackout_timer: float = 0.0
 var active_blackout_aisle: int = 0
 var breaker_switch_instance: StaticBody3D = null
 
+# Bản đồ Aisle -> chỉ số camera CCTV (0-based)
+# Aisle1-2->CAM1, Aisle3-4->CAM2, Aisle5-6->CAM3, Aisle7->CAM4, Aisle8->CAM5, Sảnh->CAM0
+const AISLE_TO_CAM: Dictionary = {1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 5}
+
 # Sự kiện Xe đẩy lạc chỗ (Quy tắc 4 - Ngày 3)
 var cart_spawn_timer: float = 0.0
 var has_spawned_cart: bool = false
@@ -81,18 +85,29 @@ var breakroom_mop_instance: StaticBody3D = null
 var active_scroll_canvas: CanvasLayer = null
 var scroll_ui_packed = preload("res://scenes/rule_scroll_ui.tscn")
 
+# Hệ thống CCTV Camera giám sát phòng nghỉ
+var active_cctv_canvas: CanvasLayer = null  # Chính là instance của cctv_ui.gd (extends CanvasLayer)
+var cctv_ui_script = preload("res://scripts/cctv_ui.gd")
+var cctv_desk_instance: StaticBody3D = null
+
+# Clive đã gọi điện chưa? (khóa nội quy cho đến khi nhận lệnh)
+var has_called_clive: bool = false
+
 func _ready() -> void:
 	_find_references()
 	_setup_looping_music()
 	_setup_aisle_lights()
 	_spawn_reset_box()
+	_spawn_cctv_desk()
 	_start_prologue()
 
 func _process(delta: float) -> void:
 	if is_prologue:
 		_process_prologue(delta)
 	else:
-		_process_shift(delta)
+		# Dừng đồng hồ khi đang hiển thị hội thoại / đọc nhiệm vụ
+		if not dialogue_active:
+			_process_shift(delta)
 		
 	# Xử lý sự kiện ma quái phụ nếu đang trực chính thức
 	if not is_prologue and not dialogue_active:
@@ -193,6 +208,101 @@ func _spawn_reset_box() -> void:
 	
 	get_tree().current_scene.add_child.call_deferred(box)
 	reset_box_instance = box
+
+# --- KHỞI TẠO BÀN CAMERA CCTV TRONG PHÒNG NGHỈ ---
+func _spawn_cctv_desk() -> void:
+	if is_instance_valid(cctv_desk_instance):
+		cctv_desk_instance.queue_free()
+
+	var desk = StaticBody3D.new()
+	desk.name = "CCTVDesk"
+	# Đặt sát tường trong phòng nghỉ, đối diện cửa vào
+	desk.position = Vector3(-10.5, 0.0, 8.2)
+	desk.set_script(load("res://scripts/cctv_desk.gd"))
+
+	# Collision toàn bộ bàn
+	var col = CollisionShape3D.new()
+	var col_shape = BoxShape3D.new()
+	col_shape.size = Vector3(1.4, 1.0, 0.7)
+	col.shape = col_shape
+	col.position = Vector3(0, 0.5, 0)
+	desk.add_child(col)
+
+	# --- THÂN BÀN (mặt gỗ tối) ---
+	var desk_mesh_inst = MeshInstance3D.new()
+	var desk_mesh = BoxMesh.new()
+	desk_mesh.size = Vector3(1.4, 0.08, 0.65)
+	desk_mesh_inst.mesh = desk_mesh
+	desk_mesh_inst.position = Vector3(0, 0.82, 0)
+	var desk_mat = StandardMaterial3D.new()
+	desk_mat.albedo_color = Color(0.08, 0.06, 0.05)
+	desk_mat.roughness = 0.8
+	desk_mesh_inst.material_override = desk_mat
+	desk.add_child(desk_mesh_inst)
+
+	# --- CHÂN BÀN ---
+	for leg_x in [-0.6, 0.6]:
+		for leg_z in [-0.25, 0.25]:
+			var leg = MeshInstance3D.new()
+			var leg_mesh = BoxMesh.new()
+			leg_mesh.size = Vector3(0.06, 0.82, 0.06)
+			leg.mesh = leg_mesh
+			leg.position = Vector3(leg_x, 0.41, leg_z)
+			var leg_mat = StandardMaterial3D.new()
+			leg_mat.albedo_color = Color(0.12, 0.1, 0.08)
+			leg.material_override = leg_mat
+			desk.add_child(leg)
+
+	# --- MÀN HÌNH MONITOR (hình hộp dẹt nghiêng 15°) ---
+	var monitor = MeshInstance3D.new()
+	var monitor_mesh = BoxMesh.new()
+	monitor_mesh.size = Vector3(1.0, 0.62, 0.06)
+	monitor.mesh = monitor_mesh
+	monitor.position = Vector3(0, 1.28, -0.12)
+	monitor.rotation_degrees = Vector3(-15, 0, 0) # Nghiêng về phía người ngồi
+	var monitor_mat = StandardMaterial3D.new()
+	monitor_mat.albedo_color = Color(0.05, 0.05, 0.06)
+	monitor_mat.roughness = 0.3
+	monitor.material_override = monitor_mat
+	desk.add_child(monitor)
+
+	# --- MẶT KÍNH XANH (màn hình bật sáng) ---
+	var screen = MeshInstance3D.new()
+	var screen_mesh = BoxMesh.new()
+	screen_mesh.size = Vector3(0.88, 0.5, 0.01)
+	screen.mesh = screen_mesh
+	screen.position = Vector3(0, 1.28, -0.085)
+	screen.rotation_degrees = Vector3(-15, 0, 0)
+	var screen_mat = StandardMaterial3D.new()
+	screen_mat.albedo_color = Color(0.02, 0.12, 0.04)
+	screen_mat.emission_enabled = true
+	screen_mat.emission = Color(0.0, 0.35, 0.08)
+	screen.material_override = screen_mat
+	desk.add_child(screen)
+
+	# --- ĐÈN TRẠNG THÁI XANH LÁ (đèn nhỏ nhấp nháy) ---
+	var status_light = OmniLight3D.new()
+	status_light.name = "ScreenGlow"
+	status_light.light_color = Color(0.0, 1.0, 0.3)
+	status_light.light_energy = 0.9
+	status_light.omni_range = 3.5
+	status_light.position = Vector3(0, 1.28, -0.1)
+	desk.add_child(status_light)
+
+	# --- NHÃN TRÊN MÀN HÌNH (Label3D) ---
+	var label = Label3D.new()
+	label.text = "WEST MARKET\nSECURITY CAM"
+	label.pixel_size = 0.003
+	label.font_size = 24
+	label.modulate = Color(0.3, 1.0, 0.4)
+	label.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	label.position = Vector3(0, 1.28, -0.075)
+	label.rotation_degrees = Vector3(-15, 0, 0)
+	desk.add_child(label)
+
+	desk.add_to_group("interactable")
+	get_tree().current_scene.add_child.call_deferred(desk)
+	cctv_desk_instance = desk
 
 # --- PHÍM BẤM THỦ CÔNG ĐỂ CHUYỂN THOẠI ---
 func _unhandled_input(event: InputEvent) -> void:
@@ -388,6 +498,9 @@ func _trigger_clive_phone_call() -> void:
 		if player_node:
 			player_node.set_physics_process(true)
 		
+		# Đánh dấu Clive đã gọi → mở khóa Nội quy
+		has_called_clive = true
+		
 		_set_objective("NHIỆM VỤ: Hãy tiến lại Quầy thanh toán dọc bên trái, nhấn E để mở hộc tủ gỗ và đọc Cuộn giấy Quy tắc.")
 		
 		var rule_scroll = get_tree().current_scene.find_child("RuleScroll", true, false)
@@ -447,13 +560,14 @@ func start_official_shift() -> void:
 				sky_mat.ground_horizon_color = Color(0.0, 0.0, 0.01)
 	
 	var day_str = "ĐÊM 1" if current_day == 1 else ("ĐÊM 2" if current_day == 2 else "ĐÊM CUỐI CÙNG")
+	_clear_objective() # Xoá nhiệm vụ "đọc quy tắc" cũ ngay lập tức
 	start_dialogue_sequence([
 		" Tiếng chuông đúng 12:00 AM báo hiệu. Ca trực bảo vệ đêm siêu thị West " + day_str + " chính thức bắt đầu!"
 	], func():
 		_set_objective("NHIỆM VỤ: Đi tuần tra toàn bộ siêu thị mỗi 1 TIẾNG ảo một lần (ví dụ: 1:00 AM, 2:00 AM...).")
-		player_node = get_tree().current_scene.find_child("Player", true, false)
-		if player_node:
-			player_node.set_physics_process(true)
+		var p = get_tree().current_scene.find_child("Player", true, false)
+		if p:
+			p.set_physics_process(true)
 	)
 
 func _process_shift(delta: float) -> void:
@@ -556,7 +670,10 @@ func _process_horror_events(delta: float) -> void:
 				# Rung camera người chơi kịch tính
 				if player.has_method("shake_camera"):
 					player.shake_camera(1.2, 0.025)
-					
+
+				# Gây nhiễu CCTV khu tủ đông (CAM 3)
+				_glitch_cctv(3, 0.7, 3.0)
+				
 				start_dialogue_sequence([
 					" Kính tủ đông DONG LANH 5 & 6 bỗng rung lắc ghê rợn vật lý, phát ra tiếng gõ cộc cộc vang dội!",
 					" Aaron: 'Ôi mẹ ơi... Tủ đông đang tự chấn động dữ dội như muốn bung kính! Phải phớt lờ đi tuần tiếp thôi!'"
@@ -709,6 +826,11 @@ func _trigger_aisle_blackout(aisle_num: int) -> void:
 			
 		# Báo động
 		_set_objective("CẢNH BÁO: Đèn Lối đi " + str(active_blackout_aisle) + " đã bị chập tắt! Hãy đến cuối hành lang để bật lại cầu chì.")
+
+		# CCTV: nhiễu mạnh camera tương ứng với lối đi chập điện
+		var cam_idx = AISLE_TO_CAM.get(aisle_num, 0)
+		_glitch_cctv(cam_idx, 0.9, 6.0)
+		_alert_cctv(cam_idx, 8.0)
 		
 		# Sinh hộp cầu chì ở cuối hành lang tối (z = -11.0, local y = 1.4, x = 1.6)
 		_spawn_breaker_switch(shelf, aisle_num)
@@ -877,6 +999,10 @@ func _spawn_ghost_woman() -> void:
 	
 	get_tree().current_scene.add_child(ghost)
 	ghost_instance = ghost
+
+	# CCTV: báo chuyển động & nhiễu camera khu Lối đi 2-3 nơi ghost xuất hiện
+	_glitch_cctv(1, 0.5, 4.0)
+	_alert_cctv(1, 10.0)
 
 # Cơ chế tương tác với Bóng ma: Tắt đèn pin và đi lùi! (Kèm Jumpscare animation)
 func _process_ghost_mechanic(player_node, delta: float) -> void:
@@ -1173,6 +1299,10 @@ func _spawn_blood_puddle() -> void:
 	get_tree().current_scene.add_child(puddle)
 	blood_puddle_instance = puddle
 
+	# CCTV: báo chuyển động camera quầy thịt (CAM 5)
+	_glitch_cctv(5, 0.6, 3.0)
+	_alert_cctv(5, 15.0)
+
 # 3. Sinh Cây lau nhà trong Breakroom (Quy tắc 5)
 func _spawn_breakroom_mop() -> void:
 	var mop = StaticBody3D.new()
@@ -1329,8 +1459,38 @@ func _transition_to_next_day() -> void:
 		)
 	)
 
+# --- HỆ THỐNG CCTV CAMERA ---
+
+func _glitch_cctv(cam_index: int, intensity: float = 0.7, duration: float = 2.5) -> void:
+	if is_instance_valid(active_cctv_canvas) and active_cctv_canvas.has_method("glitch_camera"):
+		active_cctv_canvas.glitch_camera(cam_index, intensity, duration)
+
+func _alert_cctv(cam_index: int, duration: float = 5.0) -> void:
+	if is_instance_valid(active_cctv_canvas) and active_cctv_canvas.has_method("trigger_motion_alert"):
+		active_cctv_canvas.trigger_motion_alert(cam_index, duration)
+
+func toggle_cctv_ui(player_node) -> void:
+	if is_instance_valid(active_cctv_canvas):
+		active_cctv_canvas.queue_free()
+		active_cctv_canvas = null
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		player_node.set_physics_process(true)
+	else:
+		# cctv_ui.gd extends CanvasLayer => tạo thẳng, không bọc thêm Node
+		var cctv_node = CanvasLayer.new()
+		cctv_node.set_script(cctv_ui_script)
+		cctv_node.layer = 90
+		get_tree().current_scene.add_child(cctv_node)
+		active_cctv_canvas = cctv_node
+
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		player_node.set_physics_process(false)
+
 # Bật/tắt giao diện xem Quy tắc mọi lúc bằng phím tắt N
 func toggle_rules_ui(player_node) -> void:
+	# Khóa cho đến khi Clive gọi và chỉ đọc lại sau ca chính thức
+	if not has_called_clive:
+		return
 	if is_instance_valid(active_scroll_canvas):
 		active_scroll_canvas.queue_free()
 		active_scroll_canvas = null
