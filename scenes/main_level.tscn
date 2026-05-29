@@ -1,0 +1,295 @@
+[gd_scene format=3 uid="uid://cx4x6i7e2dae"]
+
+[ext_resource type="PackedScene" uid="uid://c1h3j3j8q2p5y" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="AudioStream" uid="uid://vddlx3w4cw0f" path="res://assets/audio/idoberg-creepy-halloween-bells-loop-408748.mp3" id="1_qmak7"]
+[ext_resource type="Script" uid="uid://lk1hb14tllfn" path="res://scripts/game_manager.gd" id="2_game_manager"]
+[ext_resource type="Script" uid="uid://db42712nta0ci" path="res://scripts/rule_scroll.gd" id="3_rule_scroll"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_night"]
+sky_top_color = Color(0.01, 0.01, 0.02, 1)
+sky_horizon_color = Color(0.02, 0.02, 0.04, 1)
+ground_bottom_color = Color(0, 0, 0, 1)
+ground_horizon_color = Color(0.02, 0.02, 0.04, 1)
+
+[sub_resource type="Sky" id="Sky_night"]
+sky_material = SubResource("ProceduralSkyMaterial_night")
+
+[sub_resource type="Environment" id="Environment_night"]
+background_mode = 2
+sky = SubResource("Sky_night")
+ambient_light_source = 2
+ambient_light_color = Color(0.02, 0.02, 0.05, 1)
+ambient_light_energy = 0.3
+tonemap_mode = 2
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.1
+fog_enabled = true
+fog_light_color = Color(0.01, 0.01, 0.02, 1)
+fog_density = 0.05
+fog_sky_affect = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.12, 0.12, 0.12, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shelf"]
+albedo_color = Color(0.08, 0.08, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_freezer"]
+albedo_color = Color(0.45, 0.52, 0.6, 1)
+metallic = 0.95
+roughness = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_shelf_danger"]
+albedo_color = Color(0.25, 0.01, 0.01, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_counter"]
+albedo_color = Color(0.18, 0.14, 0.1, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_register"]
+albedo_color = Color(0.05, 0.05, 0.06, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glass"]
+albedo_color = Color(0.2, 0.3, 0.4, 0.25)
+roughness = 0.1
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_guest"]
+radius = 0.35
+height = 1.7
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_scroll"]
+size = Vector3(0.5, 0.15, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_scroll"]
+size = Vector3(0.4, 0.08, 0.4)
+
+[node name="MainLevel" type="Node3D" unique_id=816241367]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1649176265]
+environment = SubResource("Environment_night")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1150562560]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 8, 0)
+light_color = Color(0.9, 0.4, 0.2, 1)
+light_energy = 1.5
+shadow_enabled = true
+
+[node name="Map" type="Node3D" parent="." unique_id=258254834]
+
+[node name="Floor" type="CSGBox3D" parent="Map" unique_id=153299327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+use_collision = true
+size = Vector3(28, 0.2, 28)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="OuterWalls" type="CSGCombiner3D" parent="Map" unique_id=2078562898]
+use_collision = true
+
+[node name="WallNorth" type="CSGBox3D" parent="Map/OuterWalls" unique_id=611937263]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, -14)
+size = Vector3(28, 3.5, 1)
+
+[node name="WallSouth" type="CSGBox3D" parent="Map/OuterWalls" unique_id=751917591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 14)
+size = Vector3(28, 3.5, 1)
+
+[node name="WallWest" type="CSGBox3D" parent="Map/OuterWalls" unique_id=1959578065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.75, 0)
+size = Vector3(1, 3.5, 28)
+
+[node name="WallEast" type="CSGBox3D" parent="Map/OuterWalls" unique_id=373615517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1.75, 0)
+size = Vector3(1, 3.5, 28)
+
+[node name="Shelves" type="Node3D" parent="Map" unique_id=359922022]
+
+[node name="Shelf_Aisle1" type="CSGBox3D" parent="Map/Shelves" unique_id=1738005913]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.2, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle1" unique_id=1407181373]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "LOI DI 1"
+
+[node name="Shelf_Aisle2" type="CSGBox3D" parent="Map/Shelves" unique_id=522631817]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle2" unique_id=170776569]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "LOI DI 2"
+
+[node name="Shelf_Aisle3" type="CSGBox3D" parent="Map/Shelves" unique_id=1517129166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.8, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle3" unique_id=607139011]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "LOI DI 3"
+
+[node name="Shelf_Aisle4" type="CSGBox3D" parent="Map/Shelves" unique_id=898380182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle4" unique_id=1560275206]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "LOI DI 4"
+
+[node name="Shelf_Aisle5" type="CSGBox3D" parent="Map/Shelves" unique_id=1763449390]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_freezer")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle5" unique_id=1617639029]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "DONG LANH 5"
+
+[node name="Shelf_Aisle6" type="CSGBox3D" parent="Map/Shelves" unique_id=1665931456]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_freezer")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle6" unique_id=659118039]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "DONG LANH 6"
+
+[node name="Shelf_Aisle7_Danger" type="CSGBox3D" parent="Map/Shelves" unique_id=1489000635 groups=["Aisle7"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf_danger")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle7_Danger" unique_id=558495875]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "LOI DI 7"
+
+[node name="Shelf_Aisle8" type="CSGBox3D" parent="Map/Shelves" unique_id=1488263960]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.2, 1.25, -3)
+use_collision = true
+size = Vector3(2, 2.5, 16)
+material = SubResource("StandardMaterial3D_shelf")
+
+[node name="Sign" type="Label3D" parent="Map/Shelves/Shelf_Aisle8" unique_id=1257305943]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 8.1)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "QUAY THIT 8"
+
+[node name="CheckoutCounters" type="Node3D" parent="Map" unique_id=646340407]
+
+[node name="Counter1" type="CSGBox3D" parent="Map/CheckoutCounters" unique_id=2093254698]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.4, 9)
+use_collision = true
+size = Vector3(1.2, 0.8, 3)
+material = SubResource("StandardMaterial3D_counter")
+
+[node name="Register" type="CSGBox3D" parent="Map/CheckoutCounters/Counter1" unique_id=1541917912]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0.3)
+size = Vector3(0.6, 0.3, 0.6)
+material = SubResource("StandardMaterial3D_register")
+
+[node name="Sign" type="Label3D" parent="Map/CheckoutCounters/Counter1" unique_id=1719376731]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+pixel_size = 0.0025
+billboard = 1
+double_sided = false
+texture_filter = 5
+text = "QUAY SO 1"
+
+[node name="AutomaticDoor" type="CSGBox3D" parent="Map" unique_id=169387263]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 13.8)
+use_collision = true
+size = Vector3(5, 3, 0.2)
+material = SubResource("StandardMaterial3D_glass")
+
+[node name="Breakroom" type="CSGCombiner3D" parent="Map" unique_id=877115363]
+use_collision = true
+
+[node name="RoomWalls" type="CSGBox3D" parent="Map/Breakroom" unique_id=802227721]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.5, 1.75, 10.5)
+size = Vector3(6, 3.5, 6)
+
+[node name="RoomHollow" type="CSGBox3D" parent="Map/Breakroom/RoomWalls" unique_id=828893411]
+operation = 2
+size = Vector3(5.2, 3.5, 5.2)
+
+[node name="DoorCutout" type="CSGBox3D" parent="Map/Breakroom/RoomWalls" unique_id=1211679217]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, -0.5, 0)
+operation = 2
+size = Vector3(1, 2.5, 1.6)
+
+[node name="BackgroundJazzMusic" type="AudioStreamPlayer" parent="." unique_id=1506171478]
+stream = ExtResource("1_qmak7")
+volume_db = 2.0
+autoplay = true
+
+
+[node name="GuestNPC" type="Node3D" parent="." unique_id=1694518417]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 13.5)
+visible = false
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="GuestNPC" unique_id=945229604]
+mesh = SubResource("CapsuleMesh_guest")
+
+[node name="GameManager" type="Node" parent="." unique_id=7156195]
+script = ExtResource("2_game_manager")
+
+[node name="Player" parent="." unique_id=576149795 groups=["player"] instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 11)
+
+[node name="RuleScroll" type="StaticBody3D" parent="." unique_id=550444715]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.9, 9.5)
+script = ExtResource("3_rule_scroll")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RuleScroll" unique_id=941299615]
+shape = SubResource("BoxShape3D_scroll")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RuleScroll" unique_id=866403443]
+mesh = SubResource("BoxMesh_scroll")

@@ -1,0 +1,220 @@
+[gd_scene load_steps=13 format=3 uid="uid://cx4x6i7e2c9e"]
+
+[ext_resource type="Script" path="res://scripts/forest_outside.gd" id="1_forest_script"]
+[ext_resource type="PackedScene" uid="uid://c1h3j3j8q2p5y" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/supermarket_door.gd" id="3_door_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sunset"]
+sky_top_color = Color(0.2, 0.08, 0.05, 1)
+sky_horizon_color = Color(0.4, 0.15, 0.08, 1)
+ground_bottom_color = Color(0.05, 0.02, 0.01, 1)
+ground_horizon_color = Color(0.4, 0.15, 0.08, 1)
+
+[sub_resource type="Sky" id="Sky_sunset"]
+sky_material = SubResource("ProceduralSkyMaterial_sunset")
+
+[sub_resource type="Environment" id="Environment_sunset"]
+background_mode = 2
+sky = SubResource("Sky_sunset")
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.15, 0.1, 1)
+ambient_light_energy = 0.7
+tonemap_mode = 2
+ssr_enabled = true
+ssao_enabled = true
+ssil_enabled = true
+sdfgi_enabled = false
+glow_enabled = true
+glow_intensity = 0.5
+fog_enabled = false
+fog_light_color = Color(0.2, 0.08, 0.05, 1)
+fog_density = 0.01
+fog_sky_affect = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.08, 0.08, 0.08, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bark"]
+albedo_color = Color(0.18, 0.1, 0.06, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_leaves"]
+albedo_color = Color(0.01, 0.03, 0.01, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_facade"]
+albedo_color = Color(0.12, 0.12, 0.15, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+size = Vector3(5.0, 4.0, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+size = Vector3(4.8, 3.8, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_door"]
+albedo_color = Color(0.2, 0.2, 0.25, 0.4)
+roughness = 0.1
+transmission_enabled = true
+transmission = Color(0.1, 0.1, 0.1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_npc"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_npc"]
+albedo_color = Color(0.2, 0.4, 0.3, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_dialog"]
+font_size = 18
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_sender"]
+font_size = 20
+font_color = Color(0.9, 0.2, 0.2, 1)
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[node name="ForestOutside" type="Node3D"]
+script = ExtResource("1_forest_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_sunset")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.25, 0.433013, 0, 0.866025, 0.5, -0.5, -0.433013, 0.75, 0, 15, 0)
+light_color = Color(0.9, 0.4, 0.2, 1)
+light_energy = 1.5
+shadow_enabled = true
+
+[node name="Ground" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+use_collision = true
+size = Vector3(100, 0.2, 100)
+material = SubResource("StandardMaterial3D_ground")
+
+[node name="Trees" type="Node3D" parent="."]
+
+[node name="Tree1" type="CSGCylinder3D" parent="Trees"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 4, -15)
+use_collision = true
+radius = 0.3
+height = 8.0
+material = SubResource("StandardMaterial3D_bark")
+
+[node name="Leaves" type="CSGSphere3D" parent="Trees/Tree1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+radius = 2.0
+material = SubResource("StandardMaterial3D_leaves")
+
+[node name="Tree2" type="CSGCylinder3D" parent="Trees"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 4, -18)
+use_collision = true
+radius = 0.3
+height = 8.0
+material = SubResource("StandardMaterial3D_bark")
+
+[node name="Leaves" type="CSGSphere3D" parent="Trees/Tree2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+radius = 2.0
+material = SubResource("StandardMaterial3D_leaves")
+
+[node name="Tree3" type="CSGCylinder3D" parent="Trees"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 4, -30)
+use_collision = true
+radius = 0.3
+height = 8.0
+material = SubResource("StandardMaterial3D_bark")
+
+[node name="Leaves" type="CSGSphere3D" parent="Trees/Tree3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+radius = 2.0
+material = SubResource("StandardMaterial3D_leaves")
+
+[node name="SupermarketBuilding" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="Facade" type="CSGBox3D" parent="SupermarketBuilding"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -40)
+size = Vector3(30, 8, 20)
+material = SubResource("StandardMaterial3D_facade")
+
+[node name="EntranceCutout" type="CSGBox3D" parent="SupermarketBuilding/Facade"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 10)
+operation = 2
+size = Vector3(6, 4, 2)
+
+[node name="ParkingLot" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, -15)
+size = Vector3(40, 0.05, 30)
+
+[node name="Car" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.5, -15)
+use_collision = true
+size = Vector3(2.2, 1.2, 4.0)
+
+[node name="SupermarketDoor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, -30)
+script = ExtResource("3_door_script")
+prompt_message = "Cua sieu thi khoa"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SupermarketDoor"]
+shape = SubResource("BoxShape3D_door")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="SupermarketDoor"]
+mesh = SubResource("BoxMesh_door")
+material = SubResource("StandardMaterial3D_door")
+
+[node name="NPC_Guard" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -25)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NPC_Guard"]
+mesh = SubResource("CapsuleMesh_npc")
+material = SubResource("StandardMaterial3D_npc")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="ScreenFade" type="ColorRect" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="DialogContainer" type="PanelContainer" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -180.0
+offset_right = 350.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/DialogContainer"]
+layout_mode = 2
+
+[node name="SenderLabel" type="Label" parent="HUD/DialogContainer/VBox"]
+layout_mode = 2
+text = "Nguoi noi"
+label_settings = SubResource("LabelSettings_sender")
+
+[node name="DialogLabel" type="Label" parent="HUD/DialogContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Loi thoai..."
+label_settings = SubResource("LabelSettings_dialog")
+autowrap_mode = 3
+
+[node name="NextButton" type="Button" parent="HUD/DialogContainer/VBox"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = " Tiep tuc ban giao "
+
+[connection signal="pressed" from="HUD/DialogContainer/VBox/NextButton" to="." method="_on_next_button_pressed"]

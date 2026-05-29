@@ -1,0 +1,217 @@
+[gd_scene load_steps=7 format=3 uid="uid://b1h4e5y8dam"]
+
+[ext_resource type="Script" path="res://scripts/rule_scroll_ui.gd" id="1_scroll_ui_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scroll_bg"]
+bg_color = Color(0.06, 0.05, 0.04, 0.98)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.4, 0.3, 0.15, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_scroll_content"]
+bg_color = Color(0.12, 0.1, 0.08, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.4, 0.2, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_scroll_title"]
+font_size = 24
+font_color = Color(0.95, 0.8, 0.2, 1)
+outline_size = 6
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
+bg_color = Color(0.2, 0.15, 0.1, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.3, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+
+[node name="RuleScrollUI" type="Panel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -260.0
+offset_right = 350.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_scroll_bg")
+script = ExtResource("1_scroll_ui_script")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.0
+offset_top = 15.0
+offset_right = 250.0
+offset_bottom = 50.0
+grow_horizontal = 2
+text = "DANH SÁCH QUY TẮC BẢO VỆ"
+label_settings = SubResource("LabelSettings_scroll_title")
+horizontal_alignment = 1
+
+[node name="Tab0" type="Button" parent="."]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 60.0
+offset_right = 95.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "T.QUAN"
+
+[node name="Tab1" type="Button" parent="."]
+layout_mode = 0
+offset_left = 100.0
+offset_top = 60.0
+offset_right = 175.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 1"
+
+[node name="Tab2" type="Button" parent="."]
+layout_mode = 0
+offset_left = 180.0
+offset_top = 60.0
+offset_right = 255.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 2"
+
+[node name="Tab3" type="Button" parent="."]
+layout_mode = 0
+offset_left = 260.0
+offset_top = 60.0
+offset_right = 335.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 3"
+
+[node name="Tab4" type="Button" parent="."]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 60.0
+offset_right = 415.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 4"
+
+[node name="Tab5" type="Button" parent="."]
+layout_mode = 0
+offset_left = 420.0
+offset_top = 60.0
+offset_right = 495.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 5"
+
+[node name="Tab6" type="Button" parent="."]
+layout_mode = 0
+offset_left = 500.0
+offset_top = 60.0
+offset_right = 575.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 6"
+
+[node name="Tab7" type="Button" parent="."]
+layout_mode = 0
+offset_left = 580.0
+offset_top = 60.0
+offset_right = 655.0
+offset_bottom = 90.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_tab")
+text = "Q.TẮC 7"
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 90.0
+offset_right = -20.0
+offset_bottom = -70.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_scroll_content")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContentLabel" type="RichTextLabel" parent="Panel/ScrollContainer/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Đang tải quy tắc..."
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -55.0
+offset_right = 120.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "ĐÃ ĐỌC XONG & BẮT ĐẦU CA"
+
+[node name="HintLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -68.0
+offset_right = 250.0
+offset_bottom = -54.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "*Mẹo: Nhấn phím R để lật nhanh sang quy tắc kế tiếp*"
+horizontal_alignment = 1
+
+[connection signal="pressed" from="Tab0" to="." method="switch_tab" binds=[0]]
+[connection signal="pressed" from="Tab1" to="." method="switch_tab" binds=[1]]
+[connection signal="pressed" from="Tab2" to="." method="switch_tab" binds=[2]]
+[connection signal="pressed" from="Tab3" to="." method="switch_tab" binds=[3]]
+[connection signal="pressed" from="Tab4" to="." method="switch_tab" binds=[4]]
+[connection signal="pressed" from="Tab5" to="." method="switch_tab" binds=[5]]
+[connection signal="pressed" from="Tab6" to="." method="switch_tab" binds=[6]]
+[connection signal="pressed" from="Tab7" to="." method="switch_tab" binds=[7]]

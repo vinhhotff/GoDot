@@ -1,0 +1,461 @@
+[gd_scene load_steps=13 format=3 uid="uid://dp1h4e5y8c9m"]
+
+[ext_resource type="Script" path="res://scripts/bedroom_level.gd" id="1_bedroom_script"]
+[ext_resource type="PackedScene" uid="uid://c1h3j3j8q2p5y" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://scripts/bedroom_object.gd" id="3_object_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bedroom"]
+sky_top_color = Color(0.01, 0.01, 0.02, 1)
+sky_horizon_color = Color(0.02, 0.02, 0.03, 1)
+
+[sub_resource type="Sky" id="Sky_bedroom"]
+sky_material = SubResource("ProceduralSkyMaterial_bedroom")
+
+[sub_resource type="Environment" id="Environment_bedroom"]
+background_mode = 2
+sky = SubResource("Sky_bedroom")
+ambient_light_source = 2
+ambient_light_color = Color(0.12, 0.12, 0.18, 1)
+ambient_light_energy = 0.8
+glow_enabled = true
+glow_intensity = 0.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.25, 0.18, 0.12, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+albedo_color = Color(0.3, 0.35, 0.4, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_phone"]
+size = Vector3(0.3, 0.1, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_phone"]
+size = Vector3(0.3, 0.08, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wardrobe"]
+size = Vector3(1.5, 2.2, 0.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wardrobe"]
+size = Vector3(1.5, 2.2, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+size = Vector3(1.2, 2.2, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_door"]
+size = Vector3(1.2, 2.2, 0.1)
+
+[sub_resource type="Animation" id="Animation_wardrobe_open"]
+resource_name = "open_wardrobe"
+length = 1.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Wardrobe/MeshInstance3D:scale")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.4, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(1, 1, 1), Vector3(0.2, 1.0, 1.0), Vector3(1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_bedroom"]
+_data = {
+"open_wardrobe": SubResource("Animation_wardrobe_open")
+}
+
+[sub_resource type="LabelSettings" id="LabelSettings_dialog"]
+font_size = 18
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_interact"]
+font_size = 20
+font_color = Color(0.9, 0.8, 0.2, 1)
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_phone_bg"]
+bg_color = Color(0.08, 0.08, 0.1, 0.95)
+border_width_left = 6
+border_width_top = 30
+border_width_right = 6
+border_width_bottom = 20
+border_color = Color(0.2, 0.2, 0.25, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_msg_bg"]
+bg_color = Color(0.15, 0.15, 0.2, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inv_bg"]
+bg_color = Color(0.18, 0.18, 0.2, 0.98)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.35, 0.35, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot"]
+bg_color = Color(0.1, 0.1, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.05, 0.05, 0.05, 1)
+
+[node name="BedroomLevel" type="Node3D"]
+script = ExtResource("1_bedroom_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_bedroom")
+
+[node name="RoomLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.2
+omni_range = 6.0
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+use_collision = true
+size = Vector3(8, 0.2, 8)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="Walls" type="CSGCombiner3D" parent="."]
+use_collision = true
+
+[node name="WallNorth" type="CSGBox3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -4)
+size = Vector3(8, 3, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="WallSouth" type="CSGBox3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 4)
+size = Vector3(8, 3, 0.2)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="WallWest" type="CSGBox3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.5, 0)
+size = Vector3(0.2, 3, 8)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="WallEast" type="CSGBox3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.5, 0)
+size = Vector3(0.2, 3, 8)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="Phone" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.6, -3)
+script = ExtResource("3_object_script")
+object_type = "phone"
+prompt_message = "[E] Mở điện thoại"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Phone"]
+shape = SubResource("BoxShape3D_phone")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Phone"]
+mesh = SubResource("BoxMesh_phone")
+
+[node name="Table" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, -3)
+use_collision = true
+size = Vector3(1.2, 0.6, 0.8)
+
+[node name="Wardrobe" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.1, -3.5)
+script = ExtResource("3_object_script")
+object_type = "wardrobe"
+prompt_message = "Tủ quần áo khóa (Hãy check điện thoại trước)"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wardrobe"]
+shape = SubResource("BoxShape3D_wardrobe")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Wardrobe"]
+mesh = SubResource("BoxMesh_wardrobe")
+
+[node name="ExitDoor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 3.8)
+script = ExtResource("3_object_script")
+object_type = "door"
+prompt_message = "Cửa phòng (Mặc đồng phục trước khi ra ngoài)"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor"]
+shape = SubResource("BoxShape3D_door")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitDoor"]
+mesh = SubResource("BoxMesh_door")
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": SubResource("AnimationLibrary_bedroom")
+}
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="ScreenFade" type="ColorRect" parent="HUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="ObjectiveLabel" type="Label" parent="HUD"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 60.0
+grow_horizontal = 2
+text = "NHIỆM VỤ: Dùng phím WASD di chuyển, tiến lại gần điện thoại trên bàn và nhấn phím E để mở điện thoại."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="InteractionLabel" type="Label" parent="HUD"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = 30.0
+offset_right = 200.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "[E] Mở điện thoại"
+label_settings = SubResource("LabelSettings_interact")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DialogContainer" type="PanelContainer" parent="HUD"]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -140.0
+offset_right = 350.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="DialogLabel" type="Label" parent="HUD/DialogContainer"]
+layout_mode = 2
+size_flags_vertical = 1
+text = "Lời thoại"
+label_settings = SubResource("LabelSettings_dialog")
+autowrap_mode = 3
+
+[node name="PhoneScreen" type="Panel" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = -260.0
+offset_right = 160.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_phone_bg")
+
+[node name="Title" type="Label" parent="HUD/PhoneScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = -20.0
+offset_right = 100.0
+offset_bottom = 10.0
+grow_horizontal = 2
+text = "HỘP THƯ ĐẾN"
+horizontal_alignment = 1
+
+[node name="MessageItem" type="Button" parent="HUD/PhoneScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -140.0
+offset_top = 30.0
+offset_right = 140.0
+offset_bottom = 90.0
+grow_horizontal = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_msg_bg")
+text = " [!] Clive: Tuyển bảo vệ ca đêm..."
+
+[node name="ClosePhoneButton" type="Button" parent="HUD/PhoneScreen"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -45.0
+offset_right = 60.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "TẮT ĐIỆN THOẠI"
+
+[node name="MessageDetail" type="Panel" parent="HUD/PhoneScreen"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 20.0
+offset_right = -10.0
+offset_bottom = -60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_msg_bg")
+
+[node name="Content" type="RichTextLabel" parent="HUD/PhoneScreen/MessageDetail"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = -15.0
+offset_bottom = -15.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true
+text = "[b]Người gửi: clive[/b]
+[color=red]TIN TUYỂN DỤNG GẤP[/color]
+
+Cần tuyển bảo vệ ca đêm tại siêu thị West Market hẻo lánh.
+
+- Ca làm: 12:00 AM - 6:00 AM.
+- Lương: [b]21 triệu/tháng[/b].
+- Yêu cầu: Nghiêm chỉnh tuân thủ các quy tắc được Clive bàn giao.
+
+[i]*Hãy đến bãi xe để nhận bàn giao ca trực từ nhân viên trước.*[/i]"
+
+[node name="InventoryScreen" type="Panel" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -180.0
+offset_right = 250.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_inv_bg")
+
+[node name="Title" type="Label" parent="HUD/InventoryScreen"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 15.0
+offset_right = 150.0
+offset_bottom = 45.0
+grow_horizontal = 2
+text = "TỦ QUẦN ÁO & HÀNH TRANG (INVENTORY)"
+horizontal_alignment = 1
+
+[node name="Slot1" type="Panel" parent="HUD/InventoryScreen"]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 80.0
+offset_right = 140.0
+offset_bottom = 180.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="EquipSlot" type="Panel" parent="HUD/InventoryScreen"]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 80.0
+offset_right = 440.0
+offset_bottom = 180.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
+
+[node name="EquippedIcon" type="Label" parent="HUD/InventoryScreen/EquipSlot"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "ĐANG MẶC
+ĐỒNG PHỤC"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Label" type="Label" parent="HUD/InventoryScreen"]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 190.0
+offset_right = 440.0
+offset_bottom = 220.0
+text = "Ô TRANG BỊ"
+horizontal_alignment = 1
+
+[node name="CloseInventoryButton" type="Button" parent="HUD/InventoryScreen"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -80.0
+offset_top = -50.0
+offset_right = 80.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "ĐÓNG TỦ ĐỒ"
+
+[node name="ItemClothes" type="Button" parent="HUD/InventoryScreen"]
+layout_mode = 0
+offset_left = 45.0
+offset_top = 85.0
+offset_right = 135.0
+offset_bottom = 175.0
+mouse_default_cursor_shape = 2
+text = "Đồng Phục
+Bảo Vệ"
+
+[connection signal="pressed" from="HUD/PhoneScreen/MessageItem" to="." method="_on_message_item_pressed"]
+[connection signal="pressed" from="HUD/PhoneScreen/ClosePhoneButton" to="." method="_on_close_phone_button_pressed"]
+[connection signal="pressed" from="HUD/InventoryScreen/CloseInventoryButton" to="." method="_on_close_inventory_button_pressed"]
