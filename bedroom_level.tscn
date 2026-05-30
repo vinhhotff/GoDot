@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://dm1c0p5a0to4p"]
+
+[ext_resource type="PackedScene" uid="uid://dp1h4e5y8dam" path="res://scenes/intro_level.tscn" id="1_7y4h4"]
+[ext_resource type="PackedScene" uid="uid://cqx0xtj7bap56" path="res://assets/funiture/light celling/ceiling_light.glb" id="2_eybnd"]
+
+[node name="BedroomLevel" unique_id=293717702 instance=ExtResource("1_7y4h4")]
+
+[node name="Sketchfab_Scene10" parent="." index="24" unique_id=295728112 instance=ExtResource("2_eybnd")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, -0.033917516, 2.754823, 0.2440567)

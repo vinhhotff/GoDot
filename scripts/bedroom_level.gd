@@ -54,7 +54,10 @@ func open_phone() -> void:
 
 func _on_close_phone_button_pressed() -> void:
 	phone_screen.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED # Ẩn chuột di chuyển tiếp
+	if inventory_screen.visible:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED # Ẩn chuột di chuyển tiếp
 	if has_checked_phone:
 		objective_label.text = " NHIỆM VỤ: Tiến lại gần tủ quần áo lớn và nhấn E để mở Tủ đồ & Inventory."
 
@@ -75,7 +78,10 @@ func open_inventory() -> void:
 
 func close_inventory() -> void:
 	inventory_screen.visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if phone_screen.visible:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if has_changed_clothes:
 		objective_label.text = " NHIỆM VỤ: Quá chuẩn! Hãy đi ra phía cửa chính phòng ngủ và nhấn phím E để ra ngoài đi làm."
 

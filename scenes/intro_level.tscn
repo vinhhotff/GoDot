@@ -1,8 +1,19 @@
-[gd_scene load_steps=13 format=3 uid="uid://dp1h4e5y8c9m"]
+[gd_scene format=3 uid="uid://dp1h4e5y8dam"]
 
-[ext_resource type="Script" path="res://scripts/bedroom_level.gd" id="1_bedroom_script"]
+[ext_resource type="Script" uid="uid://woig0ovlaohh" path="res://scripts/bedroom_level.gd" id="1_bedroom_script"]
 [ext_resource type="PackedScene" uid="uid://c1h3j3j8q2p5y" path="res://scenes/player.tscn" id="2_player"]
-[ext_resource type="Script" path="res://scripts/bedroom_object.gd" id="3_object_script"]
+[ext_resource type="Script" uid="uid://dv2umwfjih3bk" path="res://scripts/bedroom_object.gd" id="3_object_script"]
+[ext_resource type="PackedScene" uid="uid://4h5bxkt3ek1g" path="res://assets/funiture/ps1-laundry-basket/source/laundrybasket/laundrybasket.fbx" id="4_aimfc"]
+[ext_resource type="PackedScene" uid="uid://cel0x5tpthdsy" path="res://assets/funiture/table/ps1_tsyle_low-poly_average_student_table.glb" id="5_nmhdb"]
+[ext_resource type="PackedScene" uid="uid://e3h47o7v08q0" path="res://assets/funiture/table/Wooden_Table.fbx" id="6_t5ni6"]
+[ext_resource type="PackedScene" uid="uid://celoimjis6gpw" path="res://assets/funiture/closet/closet_ps1.glb" id="7_nmhdb"]
+[ext_resource type="PackedScene" uid="uid://ctcsgbv637mfe" path="res://assets/funiture/bed/psx_hospital_door__low_poly_medical_room_door.glb" id="8_jcxbg"]
+[ext_resource type="PackedScene" uid="uid://bkmhbcviqaajf" path="res://assets/funiture/table/cell_phone.glb" id="9_n8fro"]
+[ext_resource type="PackedScene" uid="uid://cycbvrmjg7n1s" path="res://assets/funiture/table/cat_-_ps1_low_poly_rigged.glb" id="10_2oxm2"]
+[ext_resource type="PackedScene" uid="uid://cq7b2lc3pcw35" path="res://assets/funiture/bed/ps1_styled_bed.glb" id="11_cgx0p"]
+[ext_resource type="PackedScene" uid="uid://cvsgpwjcspjya" path="res://assets/funiture/bed/ps1_style_horror_wheelchair_prop.glb" id="12_i6lkt"]
+[ext_resource type="PackedScene" uid="uid://hs2npdula172" path="res://assets/funiture/light celling/window.glb" id="13_n8fro"]
+[ext_resource type="PackedScene" uid="uid://cqx0xtj7bap56" path="res://assets/funiture/light celling/ceiling_light.glb" id="14_2oxm2"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_bedroom"]
 sky_top_color = Color(0.01, 0.01, 0.02, 1)
@@ -15,10 +26,14 @@ sky_material = SubResource("ProceduralSkyMaterial_bedroom")
 background_mode = 2
 sky = SubResource("Sky_bedroom")
 ambient_light_source = 2
-ambient_light_color = Color(0.12, 0.12, 0.18, 1)
-ambient_light_energy = 0.8
+ambient_light_color = Color(0.15, 0.14, 0.2, 1)
+tonemap_mode = 2
+tonemap_white = 6.0
 glow_enabled = true
-glow_intensity = 0.5
+glow_intensity = 0.4
+glow_bloom = 0.05
+adjustment_enabled = true
+adjustment_contrast = 1.05
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
 albedo_color = Color(0.25, 0.18, 0.12, 1)
@@ -27,53 +42,41 @@ roughness = 0.8
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
 albedo_color = Color(0.3, 0.35, 0.4, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_glass"]
+transparency = 1
+albedo_color = Color(0.1, 0.15, 0.25, 0.45)
+metallic = 0.95
+roughness = 0.05
+
+[sub_resource type="BoxMesh" id="BoxMesh_glass"]
+material = SubResource("StandardMaterial3D_glass")
+size = Vector3(1.5, 1.2, 0.04)
+
 [sub_resource type="BoxShape3D" id="BoxShape3D_phone"]
 size = Vector3(0.3, 0.1, 0.3)
 
-[sub_resource type="BoxMesh" id="BoxMesh_phone"]
-size = Vector3(0.3, 0.08, 0.2)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_wardrobe"]
-size = Vector3(1.5, 2.2, 0.8)
-
-[sub_resource type="BoxMesh" id="BoxMesh_wardrobe"]
 size = Vector3(1.5, 2.2, 0.8)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_door"]
 size = Vector3(1.2, 2.2, 0.1)
 
-[sub_resource type="BoxMesh" id="BoxMesh_door"]
-size = Vector3(1.2, 2.2, 0.1)
-
 [sub_resource type="Animation" id="Animation_wardrobe_open"]
 resource_name = "open_wardrobe"
-length = 1.0
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Wardrobe/MeshInstance3D:scale")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.4, 0.8),
-"transitions": PackedFloat32Array(1, 1, 1),
-"update": 0,
-"values": [Vector3(1, 1, 1), Vector3(0.2, 1.0, 1.0), Vector3(1, 1, 1)]
-}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_bedroom"]
 _data = {
-"open_wardrobe": SubResource("Animation_wardrobe_open")
+&"open_wardrobe": SubResource("Animation_wardrobe_open")
 }
-
-[sub_resource type="LabelSettings" id="LabelSettings_dialog"]
-font_size = 18
-outline_size = 4
-outline_color = Color(0, 0, 0, 1)
 
 [sub_resource type="LabelSettings" id="LabelSettings_interact"]
 font_size = 20
 font_color = Color(0.9, 0.8, 0.2, 1)
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_dialog"]
+font_size = 18
 outline_size = 4
 outline_color = Color(0, 0, 0, 1)
 
@@ -121,99 +124,109 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.05, 0.05, 0.05, 1)
 
-[node name="BedroomLevel" type="Node3D"]
+[node name="BedroomLevel" type="Node3D" unique_id=293717702]
 script = ExtResource("1_bedroom_script")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2004971079]
 environment = SubResource("Environment_bedroom")
 
-[node name="RoomLight" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
-light_color = Color(1, 0.95, 0.85, 1)
-light_energy = 1.2
-omni_range = 6.0
+[node name="RoomLight" type="OmniLight3D" parent="." unique_id=1815446113]
+transform = Transform3D(0.9998923, 0, 0.014677692, 0, 1, 0, -0.014677692, 0, 0.9998923, 0, 2.6835926, 0)
+light_color = Color(1, 0.92, 0.8, 1)
+light_energy = 1.5
+light_indirect_energy = 0.8
+light_volumetric_fog_energy = 1.741
+omni_range = 7.0
+omni_attenuation = 0.8
 
-[node name="Floor" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+[node name="Floor" type="CSGBox3D" parent="." unique_id=825723326]
+transform = Transform3D(0.9999913, 0.0037083044, -0.0019283269, -0.003704987, 0.99999166, 0.001725184, 0.001934693, -0.0017180417, 0.99999666, 0, -0.1, 0)
 use_collision = true
 size = Vector3(8, 0.2, 8)
 material = SubResource("StandardMaterial3D_floor")
 
-[node name="Walls" type="CSGCombiner3D" parent="."]
+[node name="Ceiling" type="CSGBox3D" parent="." unique_id=825723327]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+use_collision = true
+size = Vector3(8, 0.2, 8)
+material = SubResource("StandardMaterial3D_wall")
+
+[node name="Walls" type="CSGCombiner3D" parent="." unique_id=205486204]
 use_collision = true
 
-[node name="WallNorth" type="CSGBox3D" parent="Walls"]
+[node name="WallNorth" type="CSGBox3D" parent="Walls" unique_id=167065056]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -4)
 size = Vector3(8, 3, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallSouth" type="CSGBox3D" parent="Walls"]
+[node name="WallSouth" type="CSGBox3D" parent="Walls" unique_id=240132053]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 4)
 size = Vector3(8, 3, 0.2)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallWest" type="CSGBox3D" parent="Walls"]
+[node name="WallWest" type="CSGBox3D" parent="Walls" unique_id=412341020]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 1.5, 0)
 size = Vector3(0.2, 3, 8)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="WallEast" type="CSGBox3D" parent="Walls"]
+[node name="WallEast" type="CSGBox3D" parent="Walls" unique_id=1652999786]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 1.5, 0)
 size = Vector3(0.2, 3, 8)
 material = SubResource("StandardMaterial3D_wall")
 
-[node name="Phone" type="StaticBody3D" parent="."]
+[node name="WindowSub1" type="CSGBox3D" parent="Walls" unique_id=710265588]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.6, -4)
+operation = 2
+size = Vector3(1.5, 1.2, 0.4)
+
+[node name="WindowSub2" type="CSGBox3D" parent="Walls" unique_id=1398207124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.6, -4)
+operation = 2
+size = Vector3(1.5, 1.2, 0.4)
+
+[node name="WindowGlass1" type="MeshInstance3D" parent="." unique_id=241261293]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.6, -4)
+mesh = SubResource("BoxMesh_glass")
+
+[node name="WindowGlass2" type="MeshInstance3D" parent="." unique_id=2093967053]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.6, -4)
+mesh = SubResource("BoxMesh_glass")
+
+[node name="Phone" type="StaticBody3D" parent="." unique_id=1380935638]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.6, -3)
 script = ExtResource("3_object_script")
-object_type = "phone"
 prompt_message = "[E] Mở điện thoại"
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Phone"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Phone" unique_id=2133560655]
 shape = SubResource("BoxShape3D_phone")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Phone"]
-mesh = SubResource("BoxMesh_phone")
-
-[node name="Table" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.3, -3)
-use_collision = true
-size = Vector3(1.2, 0.6, 0.8)
-
-[node name="Wardrobe" type="StaticBody3D" parent="."]
+[node name="Wardrobe" type="StaticBody3D" parent="." unique_id=617277010]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1.1, -3.5)
 script = ExtResource("3_object_script")
 object_type = "wardrobe"
 prompt_message = "Tủ quần áo khóa (Hãy check điện thoại trước)"
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Wardrobe"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Wardrobe" unique_id=478995439]
 shape = SubResource("BoxShape3D_wardrobe")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Wardrobe"]
-mesh = SubResource("BoxMesh_wardrobe")
-
-[node name="ExitDoor" type="StaticBody3D" parent="."]
+[node name="ExitDoor" type="StaticBody3D" parent="." unique_id=2095056091]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 3.8)
 script = ExtResource("3_object_script")
 object_type = "door"
 prompt_message = "Cửa phòng (Mặc đồng phục trước khi ra ngoài)"
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor" unique_id=649374308]
 shape = SubResource("BoxShape3D_door")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitDoor"]
-mesh = SubResource("BoxMesh_door")
+[node name="Player" parent="." unique_id=1234259114 instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.20140958, 1)
 
-[node name="Player" parent="." instance=ExtResource("2_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 1)
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=81787360]
+libraries/ = SubResource("AnimationLibrary_bedroom")
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
-libraries = {
-"": SubResource("AnimationLibrary_bedroom")
-}
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1672813354]
 
-[node name="HUD" type="CanvasLayer" parent="."]
-
-[node name="ScreenFade" type="ColorRect" parent="HUD"]
+[node name="ScreenFade" type="ColorRect" parent="HUD" unique_id=1375623026]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -222,7 +235,7 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
-[node name="ObjectiveLabel" type="Label" parent="HUD"]
+[node name="ObjectiveLabel" type="Label" parent="HUD" unique_id=1738082621]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -235,7 +248,7 @@ text = "NHIỆM VỤ: Dùng phím WASD di chuyển, tiến lại gần điện t
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="InteractionLabel" type="Label" parent="HUD"]
+[node name="InteractionLabel" type="Label" parent="HUD" unique_id=166005382]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -252,7 +265,7 @@ label_settings = SubResource("LabelSettings_interact")
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="DialogContainer" type="PanelContainer" parent="HUD"]
+[node name="DialogContainer" type="PanelContainer" parent="HUD" unique_id=616436101]
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
@@ -265,29 +278,29 @@ offset_bottom = -50.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="DialogLabel" type="Label" parent="HUD/DialogContainer"]
+[node name="DialogLabel" type="Label" parent="HUD/DialogContainer" unique_id=1886192143]
 layout_mode = 2
 size_flags_vertical = 1
 text = "Lời thoại"
 label_settings = SubResource("LabelSettings_dialog")
 autowrap_mode = 3
 
-[node name="PhoneScreen" type="Panel" parent="HUD"]
+[node name="PhoneScreen" type="Panel" parent="HUD" unique_id=1540938250]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -260.0
-offset_right = 160.0
-offset_bottom = 260.0
+offset_left = -440.0
+offset_top = -240.0
+offset_right = -120.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_phone_bg")
 
-[node name="Title" type="Label" parent="HUD/PhoneScreen"]
+[node name="Title" type="Label" parent="HUD/PhoneScreen" unique_id=1942366081]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -300,7 +313,7 @@ grow_horizontal = 2
 text = "HỘP THƯ ĐẾN"
 horizontal_alignment = 1
 
-[node name="MessageItem" type="Button" parent="HUD/PhoneScreen"]
+[node name="MessageItem" type="Button" parent="HUD/PhoneScreen" unique_id=2126751962]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -313,7 +326,7 @@ grow_horizontal = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_msg_bg")
 text = " [!] Clive: Tuyển bảo vệ ca đêm..."
 
-[node name="ClosePhoneButton" type="Button" parent="HUD/PhoneScreen"]
+[node name="ClosePhoneButton" type="Button" parent="HUD/PhoneScreen" unique_id=2030061571]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -328,7 +341,7 @@ grow_horizontal = 2
 grow_vertical = 0
 text = "TẮT ĐIỆN THOẠI"
 
-[node name="MessageDetail" type="Panel" parent="HUD/PhoneScreen"]
+[node name="MessageDetail" type="Panel" parent="HUD/PhoneScreen" unique_id=539181756]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -342,7 +355,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_msg_bg")
 
-[node name="Content" type="RichTextLabel" parent="HUD/PhoneScreen/MessageDetail"]
+[node name="Content" type="RichTextLabel" parent="HUD/PhoneScreen/MessageDetail" unique_id=1053982183]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -365,22 +378,22 @@ Cần tuyển bảo vệ ca đêm tại siêu thị West Market hẻo lánh.
 
 [i]*Hãy đến bãi xe để nhận bàn giao ca trực từ nhân viên trước.*[/i]"
 
-[node name="InventoryScreen" type="Panel" parent="HUD"]
+[node name="InventoryScreen" type="Panel" parent="HUD" unique_id=1751811765]
 visible = false
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
+offset_left = 60.0
 offset_top = -180.0
-offset_right = 250.0
+offset_right = 560.0
 offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_inv_bg")
 
-[node name="Title" type="Label" parent="HUD/InventoryScreen"]
+[node name="Title" type="Label" parent="HUD/InventoryScreen" unique_id=283491358]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -393,7 +406,7 @@ grow_horizontal = 2
 text = "TỦ QUẦN ÁO & HÀNH TRANG (INVENTORY)"
 horizontal_alignment = 1
 
-[node name="Slot1" type="Panel" parent="HUD/InventoryScreen"]
+[node name="Slot1" type="Panel" parent="HUD/InventoryScreen" unique_id=1183516666]
 layout_mode = 0
 offset_left = 40.0
 offset_top = 80.0
@@ -401,7 +414,7 @@ offset_right = 140.0
 offset_bottom = 180.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
-[node name="EquipSlot" type="Panel" parent="HUD/InventoryScreen"]
+[node name="EquipSlot" type="Panel" parent="HUD/InventoryScreen" unique_id=818214022]
 layout_mode = 0
 offset_left = 340.0
 offset_top = 80.0
@@ -409,7 +422,7 @@ offset_right = 440.0
 offset_bottom = 180.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot")
 
-[node name="EquippedIcon" type="Label" parent="HUD/InventoryScreen/EquipSlot"]
+[node name="EquippedIcon" type="Label" parent="HUD/InventoryScreen/EquipSlot" unique_id=631320442]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -422,7 +435,7 @@ text = "ĐANG MẶC
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Label" type="Label" parent="HUD/InventoryScreen"]
+[node name="Label" type="Label" parent="HUD/InventoryScreen" unique_id=1793020188]
 layout_mode = 0
 offset_left = 340.0
 offset_top = 190.0
@@ -431,7 +444,7 @@ offset_bottom = 220.0
 text = "Ô TRANG BỊ"
 horizontal_alignment = 1
 
-[node name="CloseInventoryButton" type="Button" parent="HUD/InventoryScreen"]
+[node name="CloseInventoryButton" type="Button" parent="HUD/InventoryScreen" unique_id=1015802184]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -446,7 +459,7 @@ grow_horizontal = 2
 grow_vertical = 0
 text = "ĐÓNG TỦ ĐỒ"
 
-[node name="ItemClothes" type="Button" parent="HUD/InventoryScreen"]
+[node name="ItemClothes" type="Button" parent="HUD/InventoryScreen" unique_id=299130856]
 layout_mode = 0
 offset_left = 45.0
 offset_top = 85.0
@@ -455,6 +468,44 @@ offset_bottom = 175.0
 mouse_default_cursor_shape = 2
 text = "Đồng Phục
 Bảo Vệ"
+
+[node name="laundrybasket" parent="." unique_id=1747080561 instance=ExtResource("4_aimfc")]
+transform = Transform3D(0.58518416, 0, 0.81090045, 0, 1, 0, -0.81090045, 0, 0.58518416, -2.4698234, 0.50883925, -3.0030694)
+
+[node name="Sketchfab_Scene" parent="." unique_id=1216296367 instance=ExtResource("5_nmhdb")]
+transform = Transform3D(-0.27206028, 0, 0.12642477, 0, 0.3, 0, -0.12642477, 0, -0.27206028, -3.1257014, 0.6129716, 0.8830277)
+
+[node name="Wooden_Table" parent="." unique_id=1882936319 instance=ExtResource("6_t5ni6")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -1.9345825, -0.37598357, -3.1131024)
+
+[node name="Sketchfab_Scene2" parent="." unique_id=665611157 instance=ExtResource("7_nmhdb")]
+transform = Transform3D(-0.027343292, 0, -0.5993766, 0, 0.6, 0, 0.5993766, 0, -0.027343292, 2.116963, 1.2486856, -3.428974)
+
+[node name="Sketchfab_Scene3" parent="." unique_id=1557289813 instance=ExtResource("8_jcxbg")]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 0.7, -0.05657643, 0.012193084, 3.7904036)
+
+[node name="Sketchfab_Scene4" parent="." unique_id=2059606066 instance=ExtResource("9_n8fro")]
+transform = Transform3D(0.03, 0, 0, 0, 0.03, 0, 0, 0, 0.03, -1.9627149, 0.62648654, -2.9200673)
+
+[node name="Sketchfab_Scene5" parent="." unique_id=88596574 instance=ExtResource("10_2oxm2")]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05, 2.111795, 0.5212125, -3.2531772)
+
+[node name="Sketchfab_Scene6" parent="." unique_id=1304450736 instance=ExtResource("11_cgx0p")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2981308, 0.47294414, 2.1149068)
+
+[node name="Sketchfab_Scene7" parent="." unique_id=958065000 instance=ExtResource("12_i6lkt")]
+transform = Transform3D(1.534499, -0.06190968, 1.0001613, 0.13959526, 0.9125279, 0.090985894, -1.6716117, 0, 0.9237903, 1.5316559, 1.7881393e-07, 0.9769179)
+rotation_edit_mode = 2
+top_level = true
+
+[node name="Sketchfab_Scene8" parent="." unique_id=1269789500 instance=ExtResource("13_n8fro")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22400832, 1.0963409, -4.171937)
+
+[node name="Sketchfab_Scene9" parent="." unique_id=1595329789 instance=ExtResource("13_n8fro")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2547197, 1.1031097, -4.2313247)
+
+[node name="Sketchfab_Scene10" parent="." unique_id=295728112 instance=ExtResource("14_2oxm2")]
+transform = Transform3D(0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0.17327619, 2.754823, -0.37377036)
 
 [connection signal="pressed" from="HUD/PhoneScreen/MessageItem" to="." method="_on_message_item_pressed"]
 [connection signal="pressed" from="HUD/PhoneScreen/ClosePhoneButton" to="." method="_on_close_phone_button_pressed"]
