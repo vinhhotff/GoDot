@@ -1,6 +1,6 @@
 extends StaticBody3D
 
-@export var prompt_message: String = "[Khoá] Hộc tủ quầy thanh toán số một"
+@export var prompt_message: String = "[Khoá] Máy tính phòng camera"
 
 var scroll_ui_packed = preload("res://scenes/rule_scroll_ui.tscn")
 

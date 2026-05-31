@@ -54,6 +54,18 @@ func _ready() -> void:
 	
 	# Đăng ký tương tác cửa siêu thị
 	$SupermarketDoor.add_to_group("interactable")
+	
+	# Tạo một khu vực thủy tinh phát sáng màu xanh cyan trong suốt cực đẹp tại lối vào để người chơi nhìn thấy chỗ tương tác E
+	var door_mesh = $SupermarketDoor.get_node_or_null("MeshInstance3D")
+	if door_mesh:
+		door_mesh.visible = true
+		var mat = StandardMaterial3D.new()
+		mat.transparency = StandardMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(0.1, 0.6, 1.0, 0.2) # Màu xanh cyan neon mờ ảo rất đẹp
+		mat.emission_enabled = true
+		mat.emission = Color(0.05, 0.3, 0.5) # Tự phát sáng nhẹ trong đêm tối
+		mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED # Phát sáng đều tăm tắp
+		door_mesh.set_surface_override_material(0, mat)
 
 func _process(delta: float) -> void:
 	# Tự động kích hoạt đối thoại khi người chơi đi bộ lại gần cửa siêu thị (khoảng cách < 8.0)
@@ -112,7 +124,7 @@ func _show_step() -> void:
 		# Cập nhật gợi ý nhiệm vụ mới
 		var door = get_node_or_null("SupermarketDoor")
 		if door:
-			door.prompt_message = "[E] Mở cửa chính để vào siêu thị West làm việc"
+			door.prompt_message = "[E] Vào nhà hàng"
 
 func _animate_car_leaving() -> void:
 	if not is_instance_valid(previous_guard_car):
@@ -141,6 +153,7 @@ func _kill_player() -> void:
 	death_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	death_overlay.color = Color(0.5, 0.0, 0.0, 0.0) # Đỏ mờ ban đầu
 	$HUD.add_child(death_overlay)
+	death_overlay.set_anchors_preset(Control.PRESET_FULL_RECT) # Đảm bảo full rect sau khi thêm
 	
 	var tween = create_tween()
 	tween.tween_property(death_overlay, "color", Color(0.08, 0.0, 0.0, 0.98), 1.2) # Chuyển sang đỏ đen kinh dị
@@ -158,11 +171,11 @@ func _kill_player() -> void:
 	label_settings.outline_color = Color(0, 0, 0) # Viền đen dầy
 	dead_label.label_settings = label_settings
 	
-	dead_label.anchors_preset = Control.PRESET_CENTER
+	dead_label.modulate.a = 0.0
+	death_overlay.add_child(dead_label) # Thêm vào death_overlay để căn chỉnh chuẩn
+	dead_label.set_anchors_preset(Control.PRESET_CENTER)
 	dead_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	dead_label.grow_vertical = Control.GROW_DIRECTION_BOTH
-	dead_label.modulate.a = 0.0
-	$HUD.add_child(dead_label)
 	
 	# Hiển thị chữ từ từ
 	var tween_text = create_tween()
@@ -182,12 +195,12 @@ func _kill_player() -> void:
 	sub_settings.outline_color = Color(0, 0, 0)
 	sub_label.label_settings = sub_settings
 	
-	sub_label.anchors_preset = Control.PRESET_CENTER
+	sub_label.modulate.a = 0.0
+	death_overlay.add_child(sub_label) # Thêm vào death_overlay để căn chỉnh chuẩn
+	sub_label.set_anchors_preset(Control.PRESET_CENTER)
 	sub_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	sub_label.grow_vertical = Control.GROW_DIRECTION_BOTH
 	sub_label.position.y += 90 # Đẩy dòng phụ xuống dưới chữ chính
-	sub_label.modulate.a = 0.0
-	$HUD.add_child(sub_label)
 	
 	var tween_sub = create_tween()
 	tween_sub.tween_interval(1.2)

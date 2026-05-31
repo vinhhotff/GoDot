@@ -297,7 +297,53 @@ func _ready() -> void:
 				gm.trigger_blackout_test(aisle)
 		)
 		bo_hbox.add_child(btn)
-		
+	# ── NÚT BẬT/TẮT CHẾ ĐỘ SÁNG TEST ──
+	var bright_test_btn = Button.new()
+	var gm_node = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm_node:
+		bright_test_btn.text = "💡 TẮT CHẾ ĐỘ SÁNG TEST (ĐÊM TỐI)" if gm_node.is_bright_test_mode else "💡 BẬT CHẾ ĐỘ SÁNG TEST (BAN NGÀY)"
+	else:
+		bright_test_btn.text = "💡 BẬT CHẾ ĐỘ SÁNG TEST (BAN NGÀY)"
+	bright_test_btn.custom_minimum_size = Vector2(0, 36)
+	
+	var bt_sb = StyleBoxFlat.new()
+	bt_sb.bg_color = Color(0.1, 0.4, 0.6, 1.0)
+	bt_sb.border_width_left = 1
+	bt_sb.border_width_right = 1
+	bt_sb.border_width_top = 1
+	bt_sb.border_width_bottom = 1
+	bt_sb.border_color = Color(0.2, 0.6, 0.9, 0.8)
+	bt_sb.corner_radius_top_left = 5
+	bt_sb.corner_radius_top_right = 5
+	bt_sb.corner_radius_bottom_left = 5
+	bt_sb.corner_radius_bottom_right = 5
+	
+	var bt_sb_hover = StyleBoxFlat.new()
+	bt_sb_hover.bg_color = Color(0.15, 0.5, 0.75, 1.0)
+	bt_sb_hover.border_width_left = 1
+	bt_sb_hover.border_width_right = 1
+	bt_sb_hover.border_width_top = 1
+	bt_sb_hover.border_width_bottom = 1
+	bt_sb_hover.border_color = Color(0.3, 0.7, 1.0, 1.0)
+	bt_sb_hover.corner_radius_top_left = 5
+	bt_sb_hover.corner_radius_top_right = 5
+	bt_sb_hover.corner_radius_bottom_left = 5
+	bt_sb_hover.corner_radius_bottom_right = 5
+	
+	bright_test_btn.add_theme_stylebox_override("normal", bt_sb)
+	bright_test_btn.add_theme_stylebox_override("hover", bt_sb_hover)
+	bright_test_btn.add_theme_stylebox_override("pressed", bt_sb_hover)
+	bright_test_btn.add_theme_color_override("font_color", Color(0.9, 0.95, 1.0))
+	bright_test_btn.add_theme_font_size_override("font_size", 12)
+	
+	bright_test_btn.pressed.connect(func():
+		var game_mngr = get_tree().current_scene.get_node_or_null("GameManager")
+		if game_mngr:
+			game_mngr.toggle_bright_test_mode()
+			bright_test_btn.text = "💡 TẮT CHẾ ĐỘ SÁNG TEST (ĐÊM TỐI)" if game_mngr.is_bright_test_mode else "💡 BẬT CHẾ ĐỘ SÁNG TEST (BAN NGÀY)"
+	)
+	vbox.add_child(bright_test_btn)
+	
 	# ── NÚT ĐÓNG BẢNG TEST ──
 	var close_btn = Button.new()
 	close_btn.text = "✖  ĐÓNG BẢNG THỬ NGHIỆM  ✖"

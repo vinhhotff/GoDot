@@ -3,6 +3,7 @@ extends CharacterBody3D
 # Tốc độ di chuyển
 const SPEED = 4.0
 const SPRINT_SPEED = 6.5
+const JUMP_VELOCITY = 4.5  # Lực nhảy vừa phải
 
 # Thể lực (Stamina)
 var max_stamina: float = 100.0
@@ -17,8 +18,8 @@ var is_pushing_cart: bool = false
 var mop_mesh: MeshInstance3D = null
 var cart_mesh: MeshInstance3D = null
 
-# Độ nhạy chuột
-@export var mouse_sensitivity: float = 0.002
+# Độ nhạy chuột (giảm xuống cho mượt, bớt giật)
+@export var mouse_sensitivity: float = 0.0012
 
 # Lấy trọng lực từ cấu hình dự án để khớp với cài đặt vật lý
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
@@ -33,17 +34,28 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var stamina_bar: ProgressBar = $HUD/StaminaContainer/StaminaBar
 
 func _ready() -> void:
+	# Đăng ký phím Space cho hành động "jump" nếu chưa có trong InputMap
+	if not InputMap.has_action("jump"):
+		InputMap.add_action("jump")
+		var jump_key = InputEventKey.new()
+		jump_key.physical_keycode = KEY_SPACE
+		InputMap.action_add_event("jump", jump_key)
+
 	# Khóa con trỏ chuột vào giữa màn hình khi game chạy
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	
+	# Nâng chiều cao nhân vật (nâng tầm mắt camera lên 2.25m cho cao ráo)
+	if head:
+		head.position.y = 2.25
 	
 	# Khởi tạo giá trị thanh thể lực ban đầu
 	if stamina_bar:
 		stamina_bar.max_value = max_stamina
 		stamina_bar.value = current_stamina
 		
-	# Ẩn đồng hồ LED nếu đang ở phòng ngủ (chưa đi làm)
+	# Ẩn đồng hồ LED nếu đang ở phòng ngủ (chưa đi làm) hoặc ngoài rừng (chưa vào ca)
 	var current_scene = get_tree().current_scene
-	if current_scene and current_scene.name == "BedroomLevel":
+	if current_scene and (current_scene.name == "BedroomLevel" or current_scene.name == "ForestOutside"):
 		var clock_ui = $HUD/ClockContainer
 		if clock_ui:
 			clock_ui.visible = false
@@ -57,6 +69,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	# Bật/tắt đèn pin bằng phím 'F'
 	if event.is_action_pressed("flashlight"):
+		if has_meta("flashlight_disabled") and get_meta("flashlight_disabled") == true:
+			return
 		flashlight.visible = !flashlight.visible
 		
 	# Bật/tắt xem lại Quy tắc bằng phím 'N' ở bất kỳ đâu
@@ -71,21 +85,28 @@ func _unhandled_input(event: InputEvent) -> void:
 		if game_manager:
 			game_manager.toggle_horror_test_ui(self)
 
-	# Bật/tắt màn hình CCTV — CHỈ HOẠT ĐỘNG KHI Ở TRONG PHÒNG NGHỈ
+	# Bật/tắt màn hình CCTV — HOẠT ĐỘNG KHI Ở GẦN BÀN MESA_LARGA (6 màn hình camera)
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_C:
 		var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
 		if game_manager and not game_manager.is_prologue:
-			# Phòng nghỉ: center (-10.5, y, 10.5), kích thước 6x6
-			var pos = global_position
-			var in_breakroom = (pos.x >= -13.5 and pos.x <= -7.5 and pos.z >= 7.5 and pos.z <= 13.5)
-			if in_breakroom:
+			# Kiểm tra xem người chơi có ở gần bàn mesa_larga (bàn 6 màn hình camera) không
+			var near_cctv = false
+			var mesa = get_tree().current_scene.find_child("mesa_larga", true, false)
+			if mesa:
+				near_cctv = global_position.distance_to(mesa.global_position) < 4.0
+			else:
+				# Fallback: kiểm tra store room bằng tọa độ
+				var pos = global_position
+				near_cctv = (pos.x >= 1.0 and pos.x <= 30.0 and pos.z >= -20.0 and pos.z <= -6.0)
+				
+			if near_cctv:
 				game_manager.toggle_cctv_ui(self)
 			else:
 				# Gợi ý nhỏ nếu bấm nhầm bên ngoài
 				var obj_node = get_node_or_null("HUD/ObjectiveLabel")
 				if obj_node:
 					var old_text = obj_node.text
-					obj_node.text = "⚠ Camera CCTV chỉ xem được trong Phòng nghỉ Breakroom."
+					obj_node.text = "⚠ Hãy đến gần bàn 6 màn hình Camera CCTV trong phòng kho để sử dụng! (Phím C)"
 					get_tree().create_timer(2.5).timeout.connect(func():
 						if is_instance_valid(obj_node) and obj_node.text.begins_with("⚠"):
 							obj_node.text = old_text
@@ -102,6 +123,16 @@ func _physics_process(delta: float) -> void:
 	# Thêm trọng lực nếu không chạm đất
 	if not is_on_floor():
 		velocity.y -= gravity * delta
+		# Chống bug trượt tường bay lên trời của Godot 4
+		if velocity.y > 0.0 and not Input.is_action_pressed("jump"):
+			velocity.y = min(velocity.y, 0.0)
+	else:
+		# Khi đang trên sàn, giữ lực nén nhẹ để bám sàn tránh bị trượt bay lên
+		velocity.y = -0.1
+
+	# Xử lý Nhảy (Jump) khi người chơi chạm đất
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		velocity.y = JUMP_VELOCITY
 
 	# Lấy hướng di chuyển dựa trên phím bấm (WASD / Mũi tên)
 	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -145,6 +176,12 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, current_speed)
 
 	move_and_slide()
+	
+	# Nếu nhân vật rơi quá sâu (dưới Y = -10), reset về vị trí cửa siêu thị an toàn tránh out map
+	if global_position.y < -10.0:
+		global_position = Vector3(5.75, 0.52, 10.96)
+		velocity = Vector3.ZERO
+	
 	_check_interaction()
 
 func _check_interaction() -> void:

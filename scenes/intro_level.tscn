@@ -140,7 +140,7 @@ omni_range = 7.0
 omni_attenuation = 0.8
 
 [node name="Floor" type="CSGBox3D" parent="." unique_id=825723326]
-transform = Transform3D(0.9999913, 0.0037083044, -0.0019283269, -0.003704987, 0.99999166, 0.001725184, 0.001934693, -0.0017180417, 0.99999666, 0, -0.1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 use_collision = true
 size = Vector3(8, 0.2, 8)
 material = SubResource("StandardMaterial3D_floor")
